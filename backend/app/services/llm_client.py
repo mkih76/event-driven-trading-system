@@ -7,7 +7,7 @@ import json
 from abc import ABC, abstractmethod
 from typing import Optional, Dict, Any, Type, TypeVar
 from pydantic import BaseModel
-from .config import settings
+from ..config import settings
 import anthropic
 
 T = TypeVar('T', bound=BaseModel)
