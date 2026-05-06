@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react';
 import type { FullAnalysis, StreamEvent, AnalyzeResponse, ExampleEvent } from '@/types';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://host.docker.internal:8080';
 
 export function useAnalysis() {
   const [loading, setLoading] = useState(false);
