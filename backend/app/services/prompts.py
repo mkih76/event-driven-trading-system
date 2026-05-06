@@ -141,6 +141,46 @@ SIGNAL_GENERATION_PROMPT = """# 角色
 5. 列出风险因素，不要盲目乐观
 """
 
+# ========== RAG 增强分析 Prompt (含实时数据) ==========
+RAG_EVENT_ANALYSIS_PROMPT = """# 角色
+你是一个专业的金融事件分析专家，擅长分析国际事件对金融市场的影响。
+
+# 输入事件
+标题: {title}
+内容: {content}
+
+# 实时数据上下文 (来自 RAG 检索)
+{real_time_context}
+
+# 分析任务
+请仔细分析上述事件，结合实时数据给出更准确的分析。
+
+# 输出JSON格式:
+{{
+    "event_type": "地缘政治/政策/灾难/经济数据/财报/技术突破/其他",
+    "core_entities": ["涉及的主要商品", "国家/地区", "行业"],
+    "sentiment": -1.0到1.0的情绪值,
+    "event_intensity": "高/中/低",
+    "summary": "30字以内的核心事件摘要",
+    "data_references": ["实时数据中与事件相关的关键信息"],
+    "direct_impacts": [
+        {{
+            "industry": "直接受影响行业名称",
+            "impact_direction": "利好/利空",
+            "impact_magnitude": "高/中/低",
+            "impact_score": -10到+10,
+            "data_evidence": "如果有实时数据支持，引用相关数据"
+        }}
+    ]
+}}
+
+# 准确性要求
+1. 如果实时数据与事件相关，结合数据给出更精确的分析
+2. 如果新闻提及具体价格/涨幅，将这些数据纳入评估
+3. 核实行业判断是否与当前市场表现一致
+4. 只输出JSON，不要解释
+"""
+
 # ========== 快速分析 Prompt (简化版) ==========
 QUICK_ANALYSIS_PROMPT = """# 任务
 你是一个金融分析师。请分析以下事件并给出简洁的投资建议。
@@ -163,6 +203,15 @@ QUICK_ANALYSIS_PROMPT = """# 任务
 def format_event_analysis_prompt(title: str, content: str) -> str:
     """格式化事件分析 Prompt"""
     return EVENT_ANALYSIS_PROMPT.format(title=title, content=content)
+
+
+def format_rag_event_analysis_prompt(title: str, content: str, real_time_context: str) -> str:
+    """格式化 RAG 增强的事件分析 Prompt"""
+    return RAG_EVENT_ANALYSIS_PROMPT.format(
+        title=title,
+        content=content,
+        real_time_context=real_time_context or "（暂无实时数据）"
+    )
 
 
 def format_chain_transmission_prompt(

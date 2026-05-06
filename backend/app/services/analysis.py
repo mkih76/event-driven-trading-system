@@ -12,6 +12,7 @@ from .prompts import (
     format_event_analysis_prompt,
     format_chain_transmission_prompt,
     format_signal_generation_prompt,
+    format_rag_event_analysis_prompt,
 )
 from ..schemas.models import (
     FullAnalysisResult,
@@ -192,6 +193,101 @@ class EventAnalysisService:
 只输出JSON。"""
 
         return await self.llm.complete(prompt)
+
+    async def analyze_with_realtime(
+        self,
+        title: str,
+        content: str = "",
+        use_cache: bool = True,
+        include_real_time: bool = True
+    ) -> FullAnalysisResult:
+        """
+        RAG 增强的事件分析
+
+        流程:
+        1. 获取实时数据上下文 (RAG)
+        2. 事件理解 (LLM + 实时数据)
+        3. 产业链传导 (LLM)
+        4. 信号生成 (LLM)
+        5. 结果整合
+        """
+        start_time = time.time()
+        cache_key = self._get_cache_key(title, content)
+
+        # 检查缓存
+        if use_cache:
+            cached = self._load_from_cache(cache_key)
+            if cached:
+                return cached
+
+        print(f"[RAG分析开始] {title[:50]}...")
+
+        # Step 0: 获取实时上下文
+        real_time_context = ""
+        if include_real_time:
+            try:
+                from .rag_service import get_rag_service
+                rag_service = get_rag_service()
+                real_time_context = await rag_service.get_context_for_event(
+                    title=title,
+                    content=content
+                )
+                print(f"[RAG获取] 实时上下文长度: {len(real_time_context)}")
+            except Exception as e:
+                print(f"[RAG警告] 获取实时数据失败: {e}")
+
+        # Step 1: 事件理解 (RAG 增强)
+        if real_time_context:
+            event_analysis = await self._analyze_event_with_context(title, content, real_time_context)
+        else:
+            event_analysis = await self._analyze_event(title, content)
+
+        print(f"[Step 1 完成] 事件类型: {event_analysis.event_type}")
+
+        # Step 2: 产业链传导
+        transmission = await self._analyze_transmission(event_analysis)
+        print(f"[Step 2 完成] 传导链长度: {len(transmission.transmission_chain)}")
+
+        # Step 3: 信号生成
+        signals = await self._generate_signals(event_analysis, transmission)
+        print(f"[Step 3 完成] 生成信号数: {len(signals)}")
+
+        # 整合结果
+        processing_time = int((time.time() - start_time) * 1000)
+
+        result = FullAnalysisResult(
+            input_title=title,
+            input_content=content,
+            event_analysis=event_analysis,
+            transmission=transmission,
+            signals=signals,
+            analysis_timestamp=datetime.now(),
+            processing_time_ms=processing_time
+        )
+
+        # 保存缓存
+        if use_cache:
+            self._save_to_cache(cache_key, result)
+
+        print(f"[分析完成] 耗时: {processing_time}ms, RAG启用: {bool(real_time_context)}")
+
+        return result
+
+    async def _analyze_event_with_context(
+        self,
+        title: str,
+        content: str,
+        real_time_context: str
+    ) -> EventAnalysisResult:
+        """带实时上下文的事件理解"""
+        prompt = format_rag_event_analysis_prompt(title, content, real_time_context)
+
+        result = await self.llm.complete(
+            prompt=prompt,
+            response_model=EventAnalysisResult
+        )
+
+        return result
 
 
 # 全局服务实例
