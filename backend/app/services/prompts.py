@@ -48,8 +48,16 @@ CHAIN_TRANSMISSION_PROMPT = """# 角色
 直接受影响行业:
 {direct_impacts}
 
+# 知识图谱约束（确定性骨架）
+{kg_constraints}
+
 # 传导推理任务
-请推理完整的产业链传导路径，考虑以下传导类型：
+请参考上述知识图谱中的已知传导路径，结合你的产业经济学知识，推理完整的产业链传导路径。
+1. **优先遵循图谱约束**: 如果图谱中已有明确的传导路径，应以此为基础
+2. **补充跨行业联系**: 图谱未覆盖的跨行业联系（如风险偏好传导、金融属性）
+3. **调整传导参数**: 根据具体事件调整传导系数和时滞
+
+考虑以下传导类型：
 1. **成本传导**: 原材料/能源涨价→中游制造→下游消费
 2. **需求传导**: 终端需求变化→中游补库/去库→上游开工率
 3. **替代效应**: A商品涨价→B替代品需求增加
@@ -98,6 +106,7 @@ CHAIN_TRANSMISSION_PROMPT = """# 角色
 2. 传导链至少3步，最多8步
 3. 每一步都要有清晰的传导机制描述
 4. 投资信号要给出置信度和理由
+5. 尽量保持与图谱约束一致，如有调整请说明原因
 """
 
 # ========== 信号生成 Prompt ==========
@@ -218,14 +227,18 @@ def format_chain_transmission_prompt(
     event_summary: str,
     event_type: str,
     sentiment: float,
-    direct_impacts: str
+    direct_impacts: str,
+    kg_constraints: str = ""
 ) -> str:
     """格式化传导分析 Prompt"""
+    if not kg_constraints:
+        kg_constraints = "（暂无知识图谱约束，请基于产业经济学知识自行推理）"
     return CHAIN_TRANSMISSION_PROMPT.format(
         event_summary=event_summary,
         event_type=event_type,
         sentiment=sentiment,
-        direct_impacts=direct_impacts
+        direct_impacts=direct_impacts,
+        kg_constraints=kg_constraints
     )
 
 

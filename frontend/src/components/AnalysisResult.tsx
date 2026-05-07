@@ -11,6 +11,7 @@ import {
   ChevronUp,
   ArrowRight,
   Building2,
+  History,
 } from "lucide-react";
 import type { FullAnalysis, StockSignal } from "@/types";
 import { TransmissionChain } from "./TransmissionChain";
@@ -283,6 +284,7 @@ export function AnalysisResult({ result }: AnalysisResultProps) {
 function SignalCard({ signal }: { signal: StockSignal }) {
   const isBuy = signal.signal_type === "BUY";
   const isSell = signal.signal_type === "SELL";
+  const hasBacktestRef = signal.backtest_reference && signal.backtest_reference.has_historical_reference;
 
   return (
     <div
@@ -334,6 +336,60 @@ function SignalCard({ signal }: { signal: StockSignal }) {
           {signal.impact_score}
         </div>
       </div>
+
+      {/* 历史回测参考 */}
+      {hasBacktestRef && (
+        <div className="mt-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
+          <div className="flex items-center gap-2 mb-2">
+            <TrendingUp className="w-4 h-4 text-blue-600" />
+            <span className="text-xs font-medium text-blue-700">历史回测参考</span>
+          </div>
+          <div className="grid grid-cols-2 gap-2 text-xs">
+            <div>
+              <span className="text-slate-500">相似事件:</span>
+              <span className="ml-1 text-slate-700 font-medium">
+                {signal.backtest_reference.best_match?.title?.slice(0, 15) || "无"}
+                {(signal.backtest_reference.best_match?.title?.length || 0) > 15 ? "..." : ""}
+              </span>
+            </div>
+            <div>
+              <span className="text-slate-500">相似度:</span>
+              <span className="ml-1 text-slate-700 font-medium">
+                {(signal.backtest_reference.best_match?.similarity_score || 0) * 100}%
+              </span>
+            </div>
+            <div>
+              <span className="text-slate-500">历史胜率:</span>
+              <span className={`ml-1 font-medium ${
+                (signal.backtest_reference.historical_win_rate || 0) >= 0.7
+                  ? "text-green-600"
+                  : (signal.backtest_reference.historical_win_rate || 0) >= 0.5
+                  ? "text-yellow-600"
+                  : "text-red-600"
+              }`}>
+                {((signal.backtest_reference.historical_win_rate || 0) * 100).toFixed(0)}%
+              </span>
+            </div>
+            <div>
+              <span className="text-slate-500">调整后置信度:</span>
+              <span className={`ml-1 font-medium ${
+                (signal.backtest_reference.confidence_change || 0) > 0
+                  ? "text-green-600"
+                  : (signal.backtest_reference.confidence_change || 0) < 0
+                  ? "text-red-600"
+                  : "text-slate-700"
+              }`}>
+                {signal.backtest_reference.adjusted_confidence?.toFixed(0) || signal.confidence}%
+              </span>
+            </div>
+          </div>
+          {signal.backtest_reference.backtest_evaluation?.actual_outcome && (
+            <p className="text-xs text-slate-600 mt-2 pt-2 border-t border-blue-200">
+              历史结果: {signal.backtest_reference.backtest_evaluation.actual_outcome}
+            </p>
+          )}
+        </div>
+      )}
 
       {(signal.risk_factors || []).length > 0 && (
         <div className="mt-3 pt-3 border-t border-slate-200">

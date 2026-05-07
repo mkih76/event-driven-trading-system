@@ -40,6 +40,29 @@ export interface TransmissionChain {
   investment_signals: InvestmentSignal[];
 }
 
+export interface BacktestReference {
+  has_historical_reference: boolean;
+  best_match?: {
+    event_id: string;
+    title: string;
+    date: string;
+    similarity_score: number;
+  };
+  adjusted_confidence: number;
+  original_confidence: number;
+  confidence_change: number;
+  historical_win_rate: number;
+  backtest_evaluation?: {
+    is_reliable: boolean;
+    expected_signal: string;
+    matched_factors: string[];
+    unmatched_factors: string[];
+    actual_outcome: string;
+  };
+  recommendation: string;
+  similar_events_count: number;
+}
+
 export interface StockSignal {
   stock_code: string;
   stock_name: string;
@@ -50,6 +73,7 @@ export interface StockSignal {
   entry_rationale: string;
   risk_factors: string[];
   related_stocks: string[];
+  backtest_reference?: BacktestReference;
 }
 
 export interface FullAnalysis {

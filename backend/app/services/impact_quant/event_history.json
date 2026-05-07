@@ -1,0 +1,605 @@
+{
+  "events": [
+    {
+      "id": "evt_001",
+      "title": "OPEC+宣布大幅减产200万桶/日",
+      "date": "2022-10-05",
+      "event_type": "地缘政治",
+      "summary": "OPEC+决定自11月起每日减产200万桶原油，超出市场预期",
+      "core_entities": ["原油", "OPEC", "能源"],
+      "sentiment": 0.75,
+      "event_intensity": "高",
+      "direct_impacts": [
+        {
+          "industry": "原油",
+          "impact_direction": "利好",
+          "impact_magnitude": "高",
+          "impact_score": 9
+        },
+        {
+          "industry": "航空",
+          "impact_direction": "利空",
+          "impact_magnitude": "中",
+          "impact_score": -5
+        },
+        {
+          "industry": "化工",
+          "impact_direction": "利空",
+          "impact_magnitude": "中",
+          "impact_score": -4
+        }
+      ],
+      "actual_market_response": {
+        "布伦特原油": "+4.5%",
+        "WTI原油": "+4.2%",
+        "中国石油601857": "+3.8%",
+        "中国石化600028": "+2.5%",
+        "航空板块": "-2.3%"
+      },
+      "transmission_chain": [
+        {
+          "step": 1,
+          "from_industry": "原油",
+          "to_industry": "炼化",
+          "relation_type": "成本传导",
+          "transmission_rate": 0.85,
+          "time_lag_days": 3,
+          "impact_magnitude": "高",
+          "impact_score": 7,
+          "description": "原油减产导致炼化成本上升"
+        },
+        {
+          "step": 2,
+          "from_industry": "炼化",
+          "to_industry": "化工",
+          "relation_type": "成本传导",
+          "transmission_rate": 0.7,
+          "time_lag_days": 7,
+          "impact_magnitude": "中",
+          "impact_score": -4,
+          "description": "化工原料价格上涨压缩利润"
+        }
+      ],
+      "investment_signals": [
+        {
+          "industry": "原油",
+          "signal": "做多",
+          "confidence": 90,
+          "reasoning": "供给收缩直接利好原油价格"
+        },
+        {
+          "industry": "航空",
+          "signal": "做空",
+          "confidence": 70,
+          "reasoning": "燃油成本上升压制航空公司利润"
+        }
+      ],
+      "actual_outcome": "布伦特原油一周内从$85涨至$93，涨幅9.4%。中国石油一周涨幅5.2%。",
+      "win_rate": 0.85
+    },
+    {
+      "id": "evt_002",
+      "title": "美联储宣布加息75个基点",
+      "date": "2022-06-15",
+      "event_type": "政策",
+      "summary": "美联储大幅加息75bp以应对通胀，为1994年以来最大幅度",
+      "core_entities": ["美联储", "美元", "美股"],
+      "sentiment": -0.7,
+      "event_intensity": "高",
+      "direct_impacts": [
+        {
+          "industry": "美股",
+          "impact_direction": "利空",
+          "impact_magnitude": "高",
+          "impact_score": -8
+        },
+        {
+          "industry": "黄金",
+          "impact_direction": "利空",
+          "impact_magnitude": "中",
+          "impact_score": -5
+        },
+        {
+          "industry": "港股",
+          "impact_direction": "利空",
+          "impact_magnitude": "高",
+          "impact_score": -7
+        }
+      ],
+      "actual_market_response": {
+        "纳斯达克": "-4.0%",
+        "标普500": "-3.2%",
+        "黄金": "-2.1%",
+        "恒生指数": "-2.8%"
+      },
+      "transmission_chain": [
+        {
+          "step": 1,
+          "from_industry": "美股",
+          "to_industry": "港股",
+          "relation_type": "风险偏好传导",
+          "transmission_rate": 0.9,
+          "time_lag_days": 1,
+          "impact_magnitude": "高",
+          "impact_score": -7,
+          "description": "美股下跌导致避险情绪传导至港股"
+        },
+        {
+          "step": 2,
+          "from_industry": "港股",
+          "to_industry": "A股",
+          "relation_type": "资金流向",
+          "transmission_rate": 0.6,
+          "time_lag_days": 2,
+          "impact_magnitude": "中",
+          "impact_score": -4,
+          "description": "北向资金外流拖累A股"
+        }
+      ],
+      "investment_signals": [
+        {
+          "industry": "美",
+          "signal": "做空",
+          "confidence": 85,
+          "reasoning": "加息直接压制风险资产估值"
+        },
+        {
+          "industry": "港股",
+          "signal": "做空",
+          "confidence": 75,
+          "reasoning": "流动性收紧叠加风险偏好下降"
+        }
+      ],
+      "actual_outcome": "纳指当周下跌6.4%，恒生指数下跌4.2%。港股做空信号正确。",
+      "win_rate": 0.8
+    },
+    {
+      "id": "evt_003",
+      "title": "中东局势紧张，胡赛武装袭击沙特石油设施",
+      "date": "2019-09-14",
+      "event_type": "地缘政治",
+      "summary": "胡赛武装无人机袭击导致沙特阿美570万桶/日产能受影响",
+      "core_entities": ["原油", "沙特", "中东"],
+      "sentiment": 0.6,
+      "event_intensity": "高",
+      "direct_impacts": [
+        {
+          "industry": "原油",
+          "impact_direction": "利好",
+          "impact_magnitude": "高",
+          "impact_score": 8
+        },
+        {
+          "industry": "能源安全",
+          "impact_direction": "利好",
+          "impact_magnitude": "中",
+          "impact_score": 5
+        },
+        {
+          "industry": "新能源",
+          "impact_direction": "利好",
+          "impact_magnitude": "中",
+          "impact_score": 4
+        }
+      ],
+      "actual_market_response": {
+        "布伦特原油": "+14.6%",
+        "WTI原油": "+15.3%",
+        "美股能源股": "+3.2%"
+      },
+      "transmission_chain": [
+        {
+          "step": 1,
+          "from_industry": "原油",
+          "to_industry": "炼化",
+          "relation_type": "成本传导",
+          "transmission_rate": 0.9,
+          "time_lag_days": 2,
+          "impact_magnitude": "高",
+          "impact_score": 8,
+          "description": "原油供给冲击推升价格"
+        },
+        {
+          "step": 2,
+          "from_industry": "原油",
+          "to_industry": "新能源",
+          "relation_type": "替代效应",
+          "transmission_rate": 0.5,
+          "time_lag_days": 14,
+          "impact_magnitude": "中",
+          "impact_score": 4,
+          "description": "能源安全担忧加速新能源布局"
+        }
+      ],
+      "investment_signals": [
+        {
+          "industry": "原油",
+          "signal": "做多",
+          "confidence": 88,
+          "reasoning": "供给缺口立即推升油价"
+        }
+      ],
+      "actual_outcome": "布伦特原油单日跳涨14.6%，为1991年以来最大单日涨幅。原油做多信号大赚。",
+      "win_rate": 0.95
+    },
+    {
+      "id": "evt_004",
+      "title": "欧洲天然气危机，能源价格暴涨",
+      "date": "2021-09-28",
+      "event_type": "能源",
+      "summary": "欧洲天然气价格一周内翻倍，引发能源危机担忧",
+      "core_entities": ["天然气", "欧洲", "能源"],
+      "sentiment": -0.5,
+      "event_intensity": "高",
+      "direct_impacts": [
+        {
+          "industry": "天然气",
+          "impact_direction": "利好",
+          "impact_magnitude": "高",
+          "impact_score": 9
+        },
+        {
+          "industry": "化工",
+          "impact_direction": "利空",
+          "impact_magnitude": "高",
+          "impact_score": -7
+        },
+        {
+          "industry": "铝",
+          "impact_direction": "利空",
+          "impact_magnitude": "高",
+          "impact_score": -6
+        }
+      ],
+      "actual_market_response": {
+        "欧洲天然气": "+120%",
+        "TTF天然气": "+100%",
+        "化工板块A股": "-4.5%"
+      },
+      "transmission_chain": [
+        {
+          "step": 1,
+          "from_industry": "天然气",
+          "to_industry": "化工",
+          "relation_type": "成本传导",
+          "transmission_rate": 0.8,
+          "time_lag_days": 5,
+          "impact_magnitude": "高",
+          "impact_score": -7,
+          "description": "天然气是化工重要原料，成本暴涨"
+        },
+        {
+          "step": 2,
+          "from_industry": "天然气",
+          "to_industry": "铝",
+          "relation_type": "成本传导",
+          "transmission_rate": 0.75,
+          "time_lag_days": 7,
+          "impact_magnitude": "高",
+          "impact_score": -6,
+          "description": "铝冶炼高耗能，天然气涨价直接推高成本"
+        }
+      ],
+      "investment_signals": [
+        {
+          "industry": "天然气",
+          "signal": "做多",
+          "confidence": 92,
+          "reasoning": "供给紧张+需求旺季，价格必涨"
+        },
+        {
+          "industry": "化工",
+          "signal": "做空",
+          "confidence": 78,
+          "reasoning": "成本暴涨侵蚀利润"
+        }
+      ],
+      "actual_outcome": "欧洲天然气价格一周涨幅超100%。国内万华化学周跌幅3.2%。化工做空信号正确。",
+      "win_rate": 0.82
+    },
+    {
+      "id": "evt_005",
+      "title": "俄乌战争爆发",
+      "date": "2022-02-24",
+      "event_type": "地缘政治",
+      "summary": "俄罗斯对乌克兰发动特别军事行动，引发全球金融市场剧烈波动",
+      "core_entities": ["俄罗斯", "乌克兰", "原油", "天然气", "小麦"],
+      "sentiment": -0.4,
+      "event_intensity": "极高",
+      "direct_impacts": [
+        {
+          "industry": "原油",
+          "impact_direction": "利好",
+          "impact_magnitude": "极高",
+          "impact_score": 10
+        },
+        {
+          "industry": "天然气",
+          "impact_direction": "利好",
+          "impact_magnitude": "极高",
+          "impact_score": 10
+        },
+        {
+          "industry": "小麦",
+          "impact_direction": "利好",
+          "impact_magnitude": "高",
+          "impact_score": 8
+        },
+        {
+          "industry": "全球股市",
+          "impact_direction": "利空",
+          "impact_magnitude": "高",
+          "impact_score": -7
+        }
+      ],
+      "actual_market_response": {
+        "布伦特原油": "+9.0%",
+        "欧洲天然气": "+35%",
+        "小麦": "+12%",
+        "标普500": "-2.6%",
+        "恒生指数": "-3.2%"
+      },
+      "transmission_chain": [
+        {
+          "step": 1,
+          "from_industry": "原油",
+          "to_industry": "炼化",
+          "relation_type": "成本传导",
+          "transmission_rate": 0.85,
+          "time_lag_days": 3,
+          "impact_magnitude": "高",
+          "impact_score": 8,
+          "description": "原油价格暴涨提升炼化成本"
+        },
+        {
+          "step": 2,
+          "from_industry": "小麦",
+          "to_industry": "养殖",
+          "relation_type": "成本传导",
+          "transmission_rate": 0.6,
+          "time_lag_days": 14,
+          "impact_magnitude": "中",
+          "impact_score": -4,
+          "description": "饲料成本上升挤压养殖利润"
+        }
+      ],
+      "investment_signals": [
+        {
+          "industry": "原油",
+          "signal": "做多",
+          "confidence": 95,
+          "reasoning": "俄乌冲突导致俄油出口受阻，供给严重收缩"
+        },
+        {
+          "industry": "小麦",
+          "signal": "做多",
+          "confidence": 88,
+          "reasoning": "乌克兰是粮仓，战争严重影响春播"
+        },
+        {
+          "industry": "全球股市",
+          "signal": "做空",
+          "confidence": 75,
+          "reasoning": "地缘风险升温压制风险偏好"
+        }
+      ],
+      "actual_outcome": "布伦特原油一周从$95涨至$110，涨幅15.8%。黄金突破2000美元。全球股市普跌。",
+      "win_rate": 0.9
+    },
+    {
+      "id": "evt_006",
+      "title": "中国宣布降准0.5个百分点",
+      "date": "2023-09-15",
+      "event_type": "政策",
+      "summary": "央行宣布下调金融机构存款准备金率，释放长期资金约5000亿",
+      "core_entities": ["中国", "央行", "流动性"],
+      "sentiment": 0.6,
+      "event_intensity": "中",
+      "direct_impacts": [
+        {
+          "industry": "银行",
+          "impact_direction": "利好",
+          "impact_magnitude": "中",
+          "impact_score": 5
+        },
+        {
+          "industry": "房地产",
+          "impact_direction": "利好",
+          "impact_magnitude": "中",
+          "impact_score": 4
+        },
+        {
+          "industry": "A股",
+          "impact_direction": "利好",
+          "impact_magnitude": "中",
+          "impact_score": 5
+        }
+      ],
+      "actual_market_response": {
+        "上证指数": "+0.3%",
+        "沪深300": "+0.4%",
+        "银行板块": "+1.2%"
+      },
+      "transmission_chain": [
+        {
+          "step": 1,
+          "from_industry": "银行",
+          "to_industry": "房地产",
+          "relation_type": "资金成本",
+          "transmission_rate": 0.7,
+          "time_lag_days": 7,
+          "impact_magnitude": "中",
+          "impact_score": 4,
+          "description": "银行获得更多可贷资金，地产融资改善"
+        },
+        {
+          "step": 2,
+          "from_industry": "流动性",
+          "to_industry": "A股",
+          "relation_type": "资金流向",
+          "transmission_rate": 0.5,
+          "time_lag_days": 14,
+          "impact_magnitude": "中",
+          "impact_score": 5,
+          "description": "宽松预期提升市场风险偏好"
+        }
+      ],
+      "investment_signals": [
+        {
+          "industry": "银行",
+          "signal": "做多",
+          "confidence": 65,
+          "reasoning": "降准释放流动性，银行息差有望改善"
+        },
+        {
+          "industry": "A股",
+          "signal": "做多",
+          "confidence": 60,
+          "reasoning": "政策宽松信号利好股市"
+        }
+      ],
+      "actual_outcome": "上证指数小幅高开后震荡，当周微涨0.3%。银行板块相对强势。降准利好兑现程度中等。",
+      "win_rate": 0.55
+    },
+    {
+      "id": "evt_007",
+      "title": "台积电宣布下调全年营收预期",
+      "date": "2023-07-20",
+      "event_type": "财报",
+      "summary": "台积电因终端需求疲软下调全年营收增长预期至约10%",
+      "core_entities": ["台积电", "半导体", "科技"],
+      "sentiment": -0.5,
+      "event_intensity": "高",
+      "direct_impacts": [
+        {
+          "industry": "半导体",
+          "impact_direction": "利空",
+          "impact_magnitude": "高",
+          "impact_score": -7
+        },
+        {
+          "industry": "消费电子",
+          "impact_direction": "利空",
+          "impact_magnitude": "中",
+          "impact_score": -5
+        },
+        {
+          "industry": "芯片设备",
+          "impact_direction": "利空",
+          "impact_magnitude": "中",
+          "impact_score": -4
+        }
+      ],
+      "actual_market_response": {
+        "台积电TSM": "-5.4%",
+        "费城半导体指数": "-3.2%",
+        "英伟达NVDA": "-4.8%",
+        "中芯国际0981.HK": "-3.5%"
+      },
+      "transmission_chain": [
+        {
+          "step": 1,
+          "from_industry": "半导体",
+          "to_industry": "消费电子",
+          "relation_type": "需求传导",
+          "transmission_rate": 0.8,
+          "time_lag_days": 5,
+          "impact_magnitude": "高",
+          "impact_score": -5,
+          "description": "芯片需求疲软预示消费电子出货量下降"
+        },
+        {
+          "step": 2,
+          "from_industry": "消费电子",
+          "to_industry": "光刻胶",
+          "relation_type": "需求传导",
+          "transmission_rate": 0.5,
+          "time_lag_days": 14,
+          "impact_magnitude": "中",
+          "impact_score": -3,
+          "description": "终端需求下滑影响上游材料需求"
+        }
+      ],
+      "investment_signals": [
+        {
+          "industry": "半导体",
+          "signal": "做空",
+          "confidence": 80,
+          "reasoning": "龙头下调预期，行业周期下行确认"
+        },
+        {
+          "industry": "消费电子",
+          "signal": "做空",
+          "confidence": 70,
+          "reasoning": "芯片需求是消费电子先行指标"
+        }
+      ],
+      "actual_outcome": "费城半导体指数一周下跌5.2%。英伟达随之回调。半导体做空信号验证。",
+      "win_rate": 0.78
+    },
+    {
+      "id": "evt_008",
+      "title": "日本福岛核废水排海启动",
+      "date": "2023-08-24",
+      "event_type": "灾难",
+      "summary": "日本开始将福岛核废水排海，引发周边国家强烈抗议",
+      "core_entities": ["日本", "水产", "渔业"],
+      "sentiment": -0.4,
+      "event_intensity": "高",
+      "direct_impacts": [
+        {
+          "industry": "水产",
+          "impact_direction": "利空",
+          "impact_magnitude": "高",
+          "impact_score": -8
+        },
+        {
+          "industry": "渔业",
+          "impact_direction": "利空",
+          "impact_magnitude": "高",
+          "impact_score": -7
+        },
+        {
+          "industry": "盐业",
+          "impact_direction": "利好",
+          "impact_magnitude": "中",
+          "impact_score": 5
+        }
+      ],
+      "actual_market_response": {
+        "水产板块A股": "-4.5%",
+        "渔业股": "-5.2%",
+        "盐业股": "+3.8%"
+      },
+      "transmission_chain": [
+        {
+          "step": 1,
+          "from_industry": "水产",
+          "to_industry": "养殖",
+          "relation_type": "需求减少",
+          "transmission_rate": 0.6,
+          "time_lag_days": 7,
+          "impact_magnitude": "中",
+          "impact_score": -4,
+          "description": "消费者回避海产品，养殖水产需求短暂增加"
+        }
+      ],
+      "investment_signals": [
+        {
+          "industry": "水产",
+          "signal": "做空",
+          "confidence": 85,
+          "reasoning": "消费者信心受损，短期需求必然下滑"
+        },
+        {
+          "industry": "盐业",
+          "signal": "做多",
+          "confidence": 65,
+          "reasoning": "海盐安全担忧驱动内陆盐需求"
+        }
+      ],
+      "actual_outcome": "水产板块当日跌停，獐子岛下跌9.8%。盐业股如雪天科技上涨。信号验证正确。",
+      "win_rate": 0.88
+    }
+  ]
+}

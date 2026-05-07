@@ -26,6 +26,8 @@ from ..schemas.models import (
     DirectImpact,
     InvestmentSignal,
 )
+from .causal_reasoning import get_industry_graph
+from .impact_quant import get_backtest_engine, get_signal_store
 
 
 class AnalysisDegradation(BaseModel):
@@ -127,6 +129,32 @@ class EventAnalysisService:
         signals = await self._generate_signals(event_analysis, transmission)
         print(f"[Step 3 完成] 生成信号数: {len(signals)}")
 
+        # Step 3.5: 历史回测 + 置信度调整
+        backtest_eval = {}
+        try:
+            backtest_engine = get_backtest_engine()
+            if signals and backtest_engine.event_count > 0:
+                for signal in signals[:3]:  # 只对top3信号评估
+                    eval_result = backtest_engine.evaluate_signal(
+                        title=title,
+                        event_type=event_analysis.event_type.value,
+                        core_entities=event_analysis.core_entities,
+                        sentiment=event_analysis.sentiment,
+                        signal_confidence=signal.confidence
+                    )
+                    signal.confidence = eval_result.get("adjusted_confidence", signal.confidence)
+                    signal.backtest_reference = eval_result  # 存储回测参考
+                backtest_eval = {
+                    "has_reference": len([s for s in signals if hasattr(s, 'backtest_reference') and s.backtest_reference.get("has_historical_reference")]) > 0,
+                    "avg_confidence_adjustment": sum(
+                        s.backtest_reference.get("confidence_change", 0)
+                        for s in signals if hasattr(s, 'backtest_reference')
+                    ) / min(len(signals), 3) if signals else 0
+                }
+                print(f"[Step 3.5 完成] 回测参考: {backtest_eval.get('has_reference')}, 置信度调整: {backtest_eval.get('avg_confidence_adjustment', 0):+.1f}")
+        except Exception as e:
+            print(f"[回测警告] 历史回测评估失败: {e}")
+
         # 整合结果
         processing_time = int((time.time() - start_time) * 1000)
 
@@ -167,18 +195,33 @@ class EventAnalysisService:
         self,
         event_analysis: EventAnalysisResult
     ) -> TransmissionChainResult:
-        """产业链传导分析"""
+        """产业链传导分析 - 集成知识图谱约束"""
         # 格式化直接影响的行业
         direct_impacts_str = "\n".join([
             f"- {impact.industry}: {impact.impact_direction.value} {impact.impact_magnitude.value}"
             for impact in event_analysis.direct_impacts
         ])
 
+        # 获取知识图谱约束
+        kg_constraints = ""
+        try:
+            kg = get_industry_graph()
+            # 从核心实体匹配图谱节点
+            matched_nodes = kg.match_nodes(event_analysis.core_entities)
+
+            if matched_nodes:
+                # 获取传导路径骨架
+                kg_constraints = kg.get_graph_constraints(matched_nodes, depth=3, max_paths=8)
+                print(f"[知识图谱] 匹配节点: {matched_nodes}, 生成 {len(kg_constraints)} 字符约束")
+        except Exception as e:
+            print(f"[知识图谱] 获取约束失败: {e}")
+
         prompt = format_chain_transmission_prompt(
             event_summary=event_analysis.summary,
             event_type=event_analysis.event_type.value,
             sentiment=event_analysis.sentiment,
-            direct_impacts=direct_impacts_str
+            direct_impacts=direct_impacts_str,
+            kg_constraints=kg_constraints  # 注入图谱约束
         )
 
         result = await self.llm.complete(
@@ -268,7 +311,7 @@ class EventAnalysisService:
         else:
             self._degradation = AnalysisDegradation()
 
-        # Step 0: 获取实时上下文
+        # Step 0: 获取实时上下文 (传入事件类型以选择性注入)
         real_time_context = ""
         if include_real_time:
             try:
@@ -276,7 +319,8 @@ class EventAnalysisService:
                 rag_service = get_rag_service()
                 real_time_context = await rag_service.get_context_for_event(
                     title=title,
-                    content=content
+                    content=content,
+                    event_type="其他"  # 先用默认，等事件分析后可以更新
                 )
                 print(f"[RAG获取] 实时上下文长度: {len(real_time_context)}")
             except Exception as e:
@@ -290,6 +334,18 @@ class EventAnalysisService:
 
         print(f"[Step 1 完成] 事件类型: {event_analysis.event_type}")
 
+        # 更新RAG上下文（根据事件类型重新获取更相关的上下文）
+        if include_real_time and not real_time_context:
+            try:
+                rag_service = get_rag_service()
+                real_time_context = await rag_service.get_context_for_event(
+                    title=title,
+                    content=content,
+                    event_type=event_analysis.event_type.value
+                )
+            except Exception:
+                pass
+
         # Step 2: 产业链传导
         transmission = await self._analyze_transmission(event_analysis)
         print(f"[Step 2 完成] 传导链长度: {len(transmission.transmission_chain)}")
@@ -297,6 +353,24 @@ class EventAnalysisService:
         # Step 3: 信号生成
         signals = await self._generate_signals(event_analysis, transmission)
         print(f"[Step 3 完成] 生成信号数: {len(signals)}")
+
+        # Step 3.5: 历史回测 + 置信度调整
+        try:
+            backtest_engine = get_backtest_engine()
+            if signals and backtest_engine.event_count > 0:
+                for signal in signals[:3]:
+                    eval_result = backtest_engine.evaluate_signal(
+                        title=title,
+                        event_type=event_analysis.event_type.value,
+                        core_entities=event_analysis.core_entities,
+                        sentiment=event_analysis.sentiment,
+                        signal_confidence=signal.confidence
+                    )
+                    signal.confidence = eval_result.get("adjusted_confidence", signal.confidence)
+                    signal.backtest_reference = eval_result
+                print(f"[Step 3.5 完成] 回测置信度调整已应用")
+        except Exception as e:
+            print(f"[回测警告] 历史回测评估失败: {e}")
 
         # 整合结果
         processing_time = int((time.time() - start_time) * 1000)

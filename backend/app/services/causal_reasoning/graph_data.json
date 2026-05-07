@@ -1,0 +1,596 @@
+{
+  "industries": [
+    {
+      "id": "oil",
+      "name": "原油",
+      "aliases": ["石油", "原油", "WTI", "布伦特"],
+      "category": "大宗商品",
+      "is_tradeable": false,
+      "related_etf": ["USO", "XLE"]
+    },
+    {
+      "id": "natural_gas",
+      "name": "天然气",
+      "aliases": ["天然气", "LNG", "NG"],
+      "category": "大宗商品",
+      "is_tradeable": false,
+      "related_etf": ["UNG", "FCG"]
+    },
+    {
+      "id": "gold",
+      "name": "黄金",
+      "aliases": ["黄金", "金价", "GOLD"],
+      "category": "大宗商品",
+      "is_tradeable": false,
+      "related_etf": ["GLD", "GDX"]
+    },
+    {
+      "id": "oil_exploration",
+      "name": "石油开采",
+      "aliases": ["石油开采", "油气开采", "三桶油"],
+      "category": "能源",
+      "is_tradeable": true,
+      "a_share": ["600028.SH", "601857.SH", "600547.SH"],
+      "us_stock": ["XOM", "CVX", "COP"]
+    },
+    {
+      "id": "oil_refining",
+      "name": "石油加工",
+      "aliases": ["石油加工", "炼油", "石化"],
+      "category": "能源",
+      "is_tradeable": true,
+      "a_share": ["600028.SH", "601233.SH"],
+      "us_stock": ["MPC", "PSX", "VLO"]
+    },
+    {
+      "id": "petrochemical",
+      "name": "化工",
+      "aliases": ["化工", "石化", "化学制品"],
+      "category": "化工",
+      "is_tradeable": true,
+      "a_share": ["600309.SH", "601216.SH"],
+      "us_stock": ["LYB", "DOW"]
+    },
+    {
+      "id": "shipping",
+      "name": "航运",
+      "aliases": ["航运", "海运", "船运"],
+      "category": "交通运输",
+      "is_tradeable": true,
+      "a_share": ["601919.SH", "601866.SH"],
+      "us_stock": ["DAL", "UAL", "AAL"]
+    },
+    {
+      "id": "aviation",
+      "name": "航空",
+      "aliases": ["航空", "航空公司", "民航"],
+      "category": "交通运输",
+      "is_tradeable": true,
+      "a_share": ["600115.SH", "601111.SH"],
+      "us_stock": ["DAL", "UAL", "AAL", "LUV"]
+    },
+    {
+      "id": "automobile",
+      "name": "汽车",
+      "aliases": ["汽车", "整车", "车企"],
+      "category": "制造业",
+      "is_tradeable": true,
+      "a_share": ["600104.SH", "601238.SH"],
+      "us_stock": ["TSLA", "GM", "F"]
+    },
+    {
+      "id": "auto_parts",
+      "name": "汽车零部件",
+      "aliases": ["汽车零部件", "配件", "零部件"],
+      "category": "制造业",
+      "is_tradeable": true,
+      "a_share": ["600741.SH", "002126.SZ"]
+    },
+    {
+      "id": "semiconductor",
+      "name": "半导体",
+      "aliases": ["半导体", "芯片", "集成电路"],
+      "category": "科技",
+      "is_tradeable": true,
+      "a_share": ["688981.SH", "002371.SZ"],
+      "us_stock": ["SMH", "INTC", "AMD", "NVDA"]
+    },
+    {
+      "id": "consumer_electronics",
+      "name": "消费电子",
+      "aliases": ["消费电子", "电子", "智能硬件"],
+      "category": "科技",
+      "is_tradeable": true,
+      "a_share": ["000725.SZ", "002475.SZ"],
+      "us_stock": ["AAPL", "三星"]
+    },
+    {
+      "id": "steel",
+      "name": "钢铁",
+      "aliases": ["钢铁", "钢材", "冶金"],
+      "category": "原材料",
+      "is_tradeable": true,
+      "a_share": ["600019.SH", "000709.SZ"]
+    },
+    {
+      "id": "nonferrous_metals",
+      "name": "有色金属",
+      "aliases": ["有色金属", "铜", "铝", "稀土"],
+      "category": "原材料",
+      "is_tradeable": true,
+      "a_share": ["600362.SH", "000060.SZ"],
+      "us_stock": ["FCX", "NEM"]
+    },
+    {
+      "id": "agriculture",
+      "name": "农业",
+      "aliases": ["农业", "种植业", "农产品"],
+      "category": "消费",
+      "is_tradeable": true,
+      "a_share": ["600598.SH", "000876.SZ"]
+    },
+    {
+      "id": "pork",
+      "name": "猪肉",
+      "aliases": ["猪肉", "养猪", "畜禽"],
+      "category": "消费",
+      "is_tradeable": true,
+      "a_share": ["002714.SZ", "002567.SZ"]
+    },
+    {
+      "id": "tourism",
+      "name": "旅游",
+      "aliases": ["旅游", "酒店", "景区"],
+      "category": "消费",
+      "is_tradeable": true,
+      "a_share": ["600054.SH", "002059.SZ"]
+    },
+    {
+      "id": "bank",
+      "name": "银行",
+      "aliases": ["银行", "银行业", "金融"],
+      "category": "金融",
+      "is_tradeable": true,
+      "a_share": ["600036.SH", "601318.SH"],
+      "us_stock": ["JPM", "BAC", "WFC"]
+    },
+    {
+      "id": "insurance",
+      "name": "保险",
+      "aliases": ["保险", "保险公司"],
+      "category": "金融",
+      "is_tradeable": true,
+      "a_share": ["601628.SH", "601318.SH"]
+    },
+    {
+      "id": "securities",
+      "name": "券商",
+      "aliases": ["券商", "证券公司", "投行"],
+      "category": "金融",
+      "is_tradeable": true,
+      "a_share": ["600030.SH", "601211.SH"]
+    },
+    {
+      "id": "real_estate",
+      "name": "房地产",
+      "aliases": ["房地产", "地产", "房产"],
+      "category": "金融",
+      "is_tradeable": true,
+      "a_share": ["000002.SZ", "600048.SH"]
+    },
+    {
+      "id": "construction",
+      "name": "建筑",
+      "aliases": ["建筑", "建筑工程", "基建"],
+      "category": "建筑",
+      "is_tradeable": true,
+      "a_share": ["601668.SH", "600170.SH"]
+    },
+    {
+      "id": "defense",
+      "name": "国防军工",
+      "aliases": ["军工", "国防", "军工股"],
+      "category": "制造",
+      "is_tradeable": true,
+      "a_share": ["600893.SH", "002414.SZ"],
+      "us_stock": ["LMT", "RTX", "NOC"]
+    },
+    {
+      "id": "pharmaceutical",
+      "name": "医药",
+      "aliases": ["医药", "制药", "生物医药"],
+      "category": "消费",
+      "is_tradeable": true,
+      "a_share": ["600276.SH", "000538.SZ"],
+      "us_stock": ["UNH", "PFE"]
+    },
+    {
+      "id": "medical_devices",
+      "name": "医疗器械",
+      "aliases": ["医疗器械", "医疗设备", "设备"],
+      "category": "消费",
+      "is_tradeable": true,
+      "a_share": ["688271.SH", "002223.SZ"]
+    },
+    {
+      "id": "new_energy",
+      "name": "新能源",
+      "aliases": ["新能源", "光伏", "风电", "锂电池"],
+      "category": "制造",
+      "is_tradeable": true,
+      "a_share": ["601012.SH", "002594.SZ"],
+      "us_stock": ["TSLA", "ENPH"]
+    },
+    {
+      "id": "electric_power",
+      "name": "电力",
+      "aliases": ["电力", "发电", "电网"],
+      "category": "公用事业",
+      "is_tradeable": true,
+      "a_share": ["600900.SH", "600905.SH"]
+    },
+    {
+      "id": "coal",
+      "name": "煤炭",
+      "aliases": ["煤炭", "煤", "采矿"],
+      "category": "能源",
+      "is_tradeable": true,
+      "a_share": ["601088.SH", "600188.SH"]
+    },
+    {
+      "id": "retail",
+      "name": "零售",
+      "aliases": ["零售", "商贸", "消费"],
+      "category": "消费",
+      "is_tradeable": true,
+      "a_share": ["600859.SH", "002024.SZ"]
+    },
+    {
+      "id": "food_beverage",
+      "name": "食品饮料",
+      "aliases": ["食品", "饮料", "消费"],
+      "category": "消费",
+      "is_tradeable": true,
+      "a_share": ["600519.SH", "000858.SZ"]
+    }
+  ],
+  "relationships": [
+    {
+      "from": "oil",
+      "to": "oil_exploration",
+      "relation_type": "cost_up",
+      "transmission_rate": 0.8,
+      "time_lag_days": 1,
+      "confidence": 0.95,
+      "description": "原油价格上涨直接利好石油开采企业"
+    },
+    {
+      "from": "oil",
+      "to": "oil_refining",
+      "relation_type": "cost_up",
+      "transmission_rate": 0.7,
+      "time_lag_days": 3,
+      "confidence": 0.9,
+      "description": "原油作为炼油主要原料，价格上涨增加炼油成本"
+    },
+    {
+      "from": "oil",
+      "to": "petrochemical",
+      "relation_type": "cost_up",
+      "transmission_rate": 0.6,
+      "time_lag_days": 7,
+      "confidence": 0.85,
+      "description": "石化行业以原油为原料，成本压力逐步传导"
+    },
+    {
+      "from": "oil",
+      "to": "shipping",
+      "relation_type": "cost_up",
+      "transmission_rate": 0.75,
+      "time_lag_days": 1,
+      "confidence": 0.9,
+      "description": "航运燃料成本与原油高度相关"
+    },
+    {
+      "from": "oil",
+      "to": "aviation",
+      "relation_type": "cost_up",
+      "transmission_rate": 0.7,
+      "time_lag_days": 2,
+      "confidence": 0.9,
+      "description": "航空燃油成本受原油价格直接影响"
+    },
+    {
+      "from": "oil",
+      "to": "automobile",
+      "relation_type": "cost_up",
+      "transmission_rate": 0.3,
+      "time_lag_days": 14,
+      "confidence": 0.7,
+      "description": "原油影响化工品和物流成本，间接影响汽车制造"
+    },
+    {
+      "from": "oil",
+      "to": "coal",
+      "relation_type": "substitute",
+      "transmission_rate": 0.5,
+      "time_lag_days": 5,
+      "confidence": 0.75,
+      "description": "原油与煤炭存在替代关系"
+    },
+    {
+      "from": "oil",
+      "to": "new_energy",
+      "relation_type": "substitute",
+      "transmission_rate": 0.4,
+      "time_lag_days": 30,
+      "confidence": 0.7,
+      "description": "原油价格上涨促进新能源需求"
+    },
+    {
+      "from": "shipping",
+      "to": "aviation",
+      "relation_type": "cost_up",
+      "transmission_rate": 0.6,
+      "time_lag_days": 5,
+      "confidence": 0.8,
+      "description": "航运成本上涨可能带动航空票价上升"
+    },
+    {
+      "from": "gold",
+      "to": "bank",
+      "relation_type": "risk_appetite",
+      "transmission_rate": 0.4,
+      "time_lag_days": 1,
+      "confidence": 0.7,
+      "description": "黄金上涨反映避险情绪，影响银行风险偏好"
+    },
+    {
+      "from": "gold",
+      "to": "securities",
+      "relation_type": "risk_appetite",
+      "transmission_rate": 0.5,
+      "time_lag_days": 1,
+      "confidence": 0.75,
+      "description": "黄金走势反映市场风险偏好，影响券商业务"
+    },
+    {
+      "from": "steel",
+      "to": "automobile",
+      "relation_type": "cost_up",
+      "transmission_rate": 0.5,
+      "time_lag_days": 14,
+      "confidence": 0.8,
+      "description": "钢材是汽车制造的重要原材料"
+    },
+    {
+      "from": "steel",
+      "to": "construction",
+      "relation_type": "cost_up",
+      "transmission_rate": 0.7,
+      "time_lag_days": 7,
+      "confidence": 0.85,
+      "description": "钢材是建筑主要材料"
+    },
+    {
+      "from": "steel",
+      "to": "real_estate",
+      "relation_type": "demand_up",
+      "transmission_rate": 0.6,
+      "time_lag_days": 30,
+      "confidence": 0.75,
+      "description": "房地产景气度影响钢材需求"
+    },
+    {
+      "from": "coal",
+      "to": "electric_power",
+      "relation_type": "cost_up",
+      "transmission_rate": 0.8,
+      "time_lag_days": 3,
+      "confidence": 0.9,
+      "description": "煤炭是发电主要燃料"
+    },
+    {
+      "from": "coal",
+      "to": "steel",
+      "relation_type": "cost_up",
+      "transmission_rate": 0.6,
+      "time_lag_days": 7,
+      "confidence": 0.85,
+      "description": "炼钢需要焦煤"
+    },
+    {
+      "from": "electric_power",
+      "to": "semiconductor",
+      "relation_type": "cost_up",
+      "transmission_rate": 0.3,
+      "time_lag_days": 14,
+      "confidence": 0.7,
+      "description": "电力成本是芯片制造重要组成部分"
+    },
+    {
+      "from": "electric_power",
+      "to": "consumer_electronics",
+      "relation_type": "cost_up",
+      "transmission_rate": 0.3,
+      "time_lag_days": 14,
+      "confidence": 0.7,
+      "description": "电力成本影响电子产品制造"
+    },
+    {
+      "from": "new_energy",
+      "to": "electric_power",
+      "relation_type": "demand_up",
+      "transmission_rate": 0.5,
+      "time_lag_days": 30,
+      "confidence": 0.75,
+      "description": "新能源发展增加电力需求"
+    },
+    {
+      "from": "pork",
+      "to": "agriculture",
+      "relation_type": "demand_up",
+      "transmission_rate": 0.6,
+      "time_lag_days": 14,
+      "confidence": 0.8,
+      "description": "养猪业景气带动饲料需求"
+    },
+    {
+      "from": "pork",
+      "to": "food_beverage",
+      "relation_type": "cost_up",
+      "transmission_rate": 0.4,
+      "time_lag_days": 7,
+      "confidence": 0.7,
+      "description": "猪肉价格上涨影响食品饮料成本"
+    },
+    {
+      "from": "semiconductor",
+      "to": "consumer_electronics",
+      "relation_type": "supply_up",
+      "transmission_rate": 0.7,
+      "time_lag_days": 30,
+      "confidence": 0.85,
+      "description": "芯片是消费电子核心组件"
+    },
+    {
+      "from": "auto_parts",
+      "to": "automobile",
+      "relation_type": "supply_up",
+      "transmission_rate": 0.8,
+      "time_lag_days": 14,
+      "confidence": 0.9,
+      "description": "零部件供应直接影响整车生产"
+    },
+    {
+      "from": "real_estate",
+      "to": "bank",
+      "relation_type": "risk_appetite",
+      "transmission_rate": 0.6,
+      "time_lag_days": 7,
+      "confidence": 0.8,
+      "description": "房地产风险影响银行资产质量"
+    },
+    {
+      "from": "real_estate",
+      "to": "construction",
+      "relation_type": "demand_up",
+      "transmission_rate": 0.9,
+      "time_lag_days": 14,
+      "confidence": 0.95,
+      "description": "房地产是建筑业重要需求来源"
+    },
+    {
+      "from": "defense",
+      "to": "semiconductor",
+      "relation_type": "demand_up",
+      "transmission_rate": 0.3,
+      "time_lag_days": 60,
+      "confidence": 0.65,
+      "description": "军工需求对高端芯片有拉动作用"
+    },
+    {
+      "from": "tourism",
+      "to": "aviation",
+      "relation_type": "demand_up",
+      "transmission_rate": 0.7,
+      "time_lag_days": 7,
+      "confidence": 0.85,
+      "description": "旅游复苏带动航空需求"
+    },
+    {
+      "from": "tourism",
+      "to": "retail",
+      "relation_type": "demand_up",
+      "transmission_rate": 0.5,
+      "time_lag_days": 14,
+      "confidence": 0.75,
+      "description": "旅游消费带动零售"
+    },
+    {
+      "from": "medical_devices",
+      "to": "pharmaceutical",
+      "relation_type": "demand_up",
+      "transmission_rate": 0.5,
+      "time_lag_days": 30,
+      "confidence": 0.7,
+      "description": "医疗设备与药品存在协同效应"
+    },
+    {
+      "from": "nonferrous_metals",
+      "to": "semiconductor",
+      "relation_type": "cost_up",
+      "transmission_rate": 0.4,
+      "time_lag_days": 21,
+      "confidence": 0.7,
+      "description": "稀有金属是芯片制造材料"
+    },
+    {
+      "from": "nonferrous_metals",
+      "to": "new_energy",
+      "relation_type": "cost_up",
+      "transmission_rate": 0.5,
+      "time_lag_days": 21,
+      "confidence": 0.75,
+      "description": "锂、钴等有色金属是锂电池原料"
+    },
+    {
+      "from": "natural_gas",
+      "to": "petrochemical",
+      "relation_type": "cost_up",
+      "transmission_rate": 0.6,
+      "time_lag_days": 5,
+      "confidence": 0.8,
+      "description": "天然气是化工重要原料和燃料"
+    },
+    {
+      "from": "natural_gas",
+      "to": "electric_power",
+      "relation_type": "cost_up",
+      "transmission_rate": 0.7,
+      "time_lag_days": 3,
+      "confidence": 0.85,
+      "description": "天然气发电成本受气价影响"
+    },
+    {
+      "from": "insurance",
+      "to": "bank",
+      "relation_type": "demand_up",
+      "transmission_rate": 0.5,
+      "time_lag_days": 30,
+      "confidence": 0.7,
+      "description": "保险资金是银行重要配置"
+    }
+  ],
+  "event_patterns": {
+    "geopolitical": {
+      "primary_impacts": ["oil", "gold", "defense", "shipping"],
+      "sentiment_factor": -0.3,
+      "typical_depth": 4
+    },
+    "oil_cut": {
+      "trigger_nodes": ["oil"],
+      "affected_paths": ["oil_exploration", "oil_refining", "petrochemical", "shipping", "aviation"]
+    },
+    "interest_rate": {
+      "primary_impacts": ["bank", "real_estate", "securities"],
+      "sentiment_factor": -0.2,
+      "typical_depth": 3
+    },
+    "trade_war": {
+      "primary_impacts": ["semiconductor", "consumer_electronics", "manufacturing"],
+      "sentiment_factor": -0.4,
+      "typical_depth": 5
+    },
+    "pandemic": {
+      "primary_impacts": ["tourism", "aviation", "retail", "consumer_electronics"],
+      "sentiment_factor": -0.5,
+      "typical_depth": 4
+    },
+    "technology_ban": {
+      "primary_impacts": ["semiconductor", "consumer_electronics", "new_energy"],
+      "sentiment_factor": -0.3,
+      "typical_depth": 4
+    }
+  }
+}
