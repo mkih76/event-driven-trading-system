@@ -8,8 +8,47 @@ from datetime import datetime
 from .base import BaseDataProvider, NewsItem, MarketData, SectorData
 from .config import data_provider_settings
 import asyncio
-from functools import lru_cache
+from functools import lru_cache, wraps
 import time
+import logging
+from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
+
+logger = logging.getLogger(__name__)
+
+# 全局速率限制器
+_rate_limiter_last_call = 0.0
+_rate_limiter_min_interval = 1.0  # 最小间隔1秒
+_rate_limiter_lock = asyncio.Lock()
+
+
+async def _rate_limit():
+    """速率限制：确保两次调用之间至少间隔1秒"""
+    global _rate_limiter_last_call
+    async with _rate_limiter_lock:
+        now = time.time()
+        elapsed = now - _rate_limiter_last_call
+        if elapsed < _rate_limiter_min_interval:
+            await asyncio.sleep(_rate_limiter_min_interval - elapsed)
+        _rate_limiter_last_call = time.time()
+
+
+# 装饰器：为AKShare调用添加重试和速率限制
+def ak_retry(func):
+    @wraps(func)
+    @retry(
+        stop=stop_after_attempt(3),
+        wait=wait_exponential(multiplier=1, min=1, max=5),
+        retry=retry_if_exception_type((ConnectionError, TimeoutError, Exception)),
+        reraise=True
+    )
+    async def wrapper(*args, **kwargs):
+        await _rate_limit()  # 速率限制
+        try:
+            return await func(*args, **kwargs)
+        except Exception as e:
+            logger.warning(f"AKShare调用失败 (重试中): {e}")
+            raise
+    return wrapper
 
 
 class AKShareProvider(BaseDataProvider):
@@ -31,6 +70,7 @@ class AKShareProvider(BaseDataProvider):
         """设置缓存"""
         cache[key] = (time.time(), data)
 
+    @ak_retry
     async def get_news(
         self,
         keywords: List[str],
@@ -88,6 +128,7 @@ class AKShareProvider(BaseDataProvider):
                 pass
         return datetime.now()
 
+    @ak_retry
     async def get_market_data(
         self,
         symbols: List[str]
@@ -138,6 +179,7 @@ class AKShareProvider(BaseDataProvider):
             print(f"批量获取行情失败: {e}")
             return []
 
+    @ak_retry
     async def get_sector_data(
         self,
         sector_name: str
@@ -214,6 +256,7 @@ class AKShareProvider(BaseDataProvider):
             print(f"搜索股票失败: {e}")
             return []
 
+    @ak_retry
     async def get_hot_sectors(self) -> List[SectorData]:
         """获取热门板块"""
         try:

@@ -7,6 +7,7 @@ import json
 from typing import Optional, Tuple
 from datetime import datetime
 from pydantic import BaseModel
+from fastapi import HTTPException, Header
 from .llm_client import get_llm, LLMError, LLMUnavailableError, RuleBasedFallbackClient
 from .prompts import (
     format_event_analysis_prompt,
@@ -26,7 +27,8 @@ from ..schemas.models import (
     DirectImpact,
     InvestmentSignal,
 )
-from .causal_reasoning import get_industry_graph
+from ..config import settings
+from .causal_reasoning import get_industry_graph, get_dynamic_learner
 from .impact_quant import get_backtest_engine, get_signal_store
 
 
@@ -41,6 +43,41 @@ class AnalysisDegradation(BaseModel):
         if self.is_degraded:
             return f"当前使用规则模式，分析精度可能下降。({self.reason})"
         return ""
+
+
+async def verify_api_key(x_api_key: Optional[str] = Header(None)) -> str:
+    """
+    验证 API Key 认证
+
+    Args:
+        x_api_key: 请求头中的 API Key
+
+    Returns:
+        验证通过返回 "verified"
+
+    Raises:
+        HTTPException: 认证失败
+    """
+    if not settings.API_AUTH_ENABLED:
+        return "skip"
+
+    if not settings.API_KEY:
+        # 未配置 API Key，跳过认证（防止自己被锁）
+        return "skip"
+
+    if not x_api_key:
+        raise HTTPException(
+            status_code=401,
+            detail="需要 API Key。请在请求头中添加 X-API-Key"
+        )
+
+    if x_api_key != settings.API_KEY:
+        raise HTTPException(
+            status_code=403,
+            detail="API Key 无效"
+        )
+
+    return "verified"
 
 
 class SignalList(BaseModel):
@@ -172,6 +209,55 @@ class EventAnalysisService:
         if use_cache:
             self._save_to_cache(cache_key, result)
 
+        # Step 4: 动态学习（从分析结果中学习新关系和模式）
+        try:
+            dynamic_learner = get_dynamic_learner()
+
+            # 转换传导链为学习格式
+            transmission_chain_data = [
+                {
+                    "from_industry": step.from_industry,
+                    "to_industry": step.to_industry,
+                    "relation_type": step.relation_type.value,
+                    "time_lag_days": step.time_lag_days,
+                    "transmission_rate": step.transmission_rate
+                }
+                for step in transmission.transmission_chain
+            ]
+
+            direct_impacts_data = [
+                {
+                    "industry": imp.industry,
+                    "direction": imp.impact_direction.value,
+                    "magnitude": imp.impact_magnitude.value
+                }
+                for imp in event_analysis.direct_impacts
+            ]
+
+            await dynamic_learner.learn_from_analysis(
+                event_type=event_analysis.event_type.value,
+                core_entities=event_analysis.core_entities,
+                direct_impacts=direct_impacts_data,
+                transmission_chain=transmission_chain_data,
+                sentiment=event_analysis.sentiment
+            )
+            print(f"[动态学习] 关系数: {dynamic_learner.get_statistics()['total_relationships_learned']}, 模式数: {dynamic_learner.get_statistics()['total_patterns_learned']}")
+
+            # 同时学习事件历史
+            from .impact_quant import get_backtest_engine
+            backtest_engine = get_backtest_engine()
+            backtest_engine.learn_from_analysis(
+                event_title=title,
+                event_type=event_analysis.event_type.value,
+                core_entities=event_analysis.core_entities,
+                sentiment=event_analysis.sentiment,
+                direct_impacts=direct_impacts_data,
+                transmission_chain=transmission_chain_data,
+                signals=[{"industry": sig.industry, "signal": sig.signal, "confidence": sig.confidence} for sig in signals]
+            )
+        except Exception as e:
+            print(f"[动态学习] 学习失败: {e}")
+
         print(f"[分析完成] 耗时: {processing_time}ms")
 
         return result, self._degradation
@@ -206,6 +292,13 @@ class EventAnalysisService:
         kg_constraints = ""
         try:
             kg = get_industry_graph()
+
+            # 注入动态学习的关系
+            dynamic_learner = get_dynamic_learner()
+            dynamic_rels = dynamic_learner.get_dynamic_relationships(min_confidence=0.6)
+            if dynamic_rels:
+                kg.add_dynamic_relationships(dynamic_rels)
+
             # 从核心实体匹配图谱节点
             matched_nodes = kg.match_nodes(event_analysis.core_entities)
 
@@ -388,6 +481,54 @@ class EventAnalysisService:
         # 保存缓存
         if use_cache:
             self._save_to_cache(cache_key, result)
+
+        # Step 4: 动态学习（从分析结果中学习新关系和模式）
+        try:
+            dynamic_learner = get_dynamic_learner()
+
+            transmission_chain_data = [
+                {
+                    "from_industry": step.from_industry,
+                    "to_industry": step.to_industry,
+                    "relation_type": step.relation_type.value,
+                    "time_lag_days": step.time_lag_days,
+                    "transmission_rate": step.transmission_rate
+                }
+                for step in transmission.transmission_chain
+            ]
+
+            direct_impacts_data = [
+                {
+                    "industry": imp.industry,
+                    "direction": imp.impact_direction.value,
+                    "magnitude": imp.impact_magnitude.value
+                }
+                for imp in event_analysis.direct_impacts
+            ]
+
+            await dynamic_learner.learn_from_analysis(
+                event_type=event_analysis.event_type.value,
+                core_entities=event_analysis.core_entities,
+                direct_impacts=direct_impacts_data,
+                transmission_chain=transmission_chain_data,
+                sentiment=event_analysis.sentiment
+            )
+            print(f"[动态学习] 关系数: {dynamic_learner.get_statistics()['total_relationships_learned']}, 模式数: {dynamic_learner.get_statistics()['total_patterns_learned']}")
+
+            # 同时学习事件历史
+            from .impact_quant import get_backtest_engine
+            backtest_engine = get_backtest_engine()
+            backtest_engine.learn_from_analysis(
+                event_title=title,
+                event_type=event_analysis.event_type.value,
+                core_entities=event_analysis.core_entities,
+                sentiment=event_analysis.sentiment,
+                direct_impacts=direct_impacts_data,
+                transmission_chain=transmission_chain_data,
+                signals=[{"industry": sig.industry, "signal": sig.signal, "confidence": sig.confidence} for sig in signals]
+            )
+        except Exception as e:
+            print(f"[动态学习] 学习失败: {e}")
 
         print(f"[分析完成] 耗时: {processing_time}ms, RAG启用: {bool(real_time_context)}")
 

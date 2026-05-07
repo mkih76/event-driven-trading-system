@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react';
 import type { FullAnalysis, StreamEvent, AnalyzeResponse, ExampleEvent } from '@/types';
 
-const API_BASE = typeof window !== 'undefined' ? '' : (process.env.NEXT_PUBLIC_API_URL || 'http://host.docker.internal:8080');
+const API_BASE = typeof window !== 'undefined' ? '' : (process.env.NEXT_PUBLIC_API_URL || 'http://backend:8080');
 
 export function useAnalysis() {
   const [loading, setLoading] = useState(false);
@@ -82,6 +82,9 @@ export function useAnalysis() {
       }
 
       let buffer = '';
+      const MAX_BUFFER_SIZE = 1024 * 1024; // 最大1MB缓冲区
+      let lastReceiveTime = Date.now();
+      const TIMEOUT_MS = 120000; // 2分钟无数据超时
 
       while (true) {
         const { done, value } = await reader.read();
@@ -89,6 +92,21 @@ export function useAnalysis() {
         if (done) break;
 
         buffer += decoder.decode(value, { stream: true });
+        lastReceiveTime = Date.now();
+
+        // 防止缓冲区无限增长
+        if (buffer.length > MAX_BUFFER_SIZE) {
+          // 保留最后部分
+          buffer = buffer.slice(-MAX_BUFFER_SIZE / 2);
+          console.warn('SSE缓冲区过大，已截断');
+        }
+
+        // 检查超时
+        if (Date.now() - lastReceiveTime > TIMEOUT_MS) {
+          throw new Error('服务器响应超时，请重试');
+        }
+
+        // 处理完整的数据行
         const lines = buffer.split('\n');
         buffer = lines.pop() || '';
 

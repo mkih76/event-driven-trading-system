@@ -9,7 +9,14 @@ import json
 
 from .config import settings
 from .schemas.models import AnalyzeRequest, AnalyzeResponse, FullAnalysisResult
-from .services.analysis import get_analysis_service, AnalysisDegradation
+from .services.analysis import get_analysis_service, AnalysisDegradation, verify_api_key
+from fastapi import Depends
+import os
+import pathlib
+
+# 确保数据库目录存在
+db_path = pathlib.Path(settings.DATABASE_URL.replace("sqlite:///", ""))
+db_path.parent.mkdir(parents=True, exist_ok=True)
 
 
 app = FastAPI(
@@ -45,7 +52,10 @@ async def health_check():
 
 
 @app.post("/api/v1/analyze", response_model=AnalyzeResponse)
-async def analyze_event(request: AnalyzeRequest):
+async def analyze_event(
+    request: AnalyzeRequest,
+    _auth: str = Depends(verify_api_key)
+):
     """
     分析事件并生成投资信号
 
@@ -53,7 +63,10 @@ async def analyze_event(request: AnalyzeRequest):
     1. 理解事件类型和情绪
     2. 推理产业链传导路径
     3. 生成个股交易信号
+
+    如启用 API 认证，请在请求头中添加 X-API-Key
     """
+    # API Key 验证会在路由层面完成，这里验证标记
     try:
         service = get_analysis_service()
 
@@ -78,14 +91,23 @@ async def analyze_event(request: AnalyzeRequest):
 
 
 @app.post("/api/v1/analyze/stream")
-async def analyze_event_stream(request: AnalyzeRequest):
+async def analyze_event_stream(
+    request: AnalyzeRequest,
+    _auth: str = Depends(verify_api_key)
+):
     """
     流式分析事件 - 逐步返回分析过程
 
     适合前端展示 LLM 推理过程
+
+    如启用 API 认证，请在请求头中添加 X-API-Key
     """
     async def event_generator():
         service = get_analysis_service()
+
+        # 临时增加 LLM 超时时间以适应流式请求
+        original_timeout = service.llm.timeout
+        service.llm.timeout = 150  # 150秒足够流式请求
 
         # Step 1: 事件理解
         yield f"data: {json.dumps({'step': 1, 'status': 'analyzing', 'message': '理解事件...'})}\n\n"
@@ -97,6 +119,8 @@ async def analyze_event_stream(request: AnalyzeRequest):
         except Exception as e:
             yield f"data: {json.dumps({'step': 1, 'status': 'error', 'message': str(e)})}\n\n"
             return
+        finally:
+            service.llm.timeout = original_timeout
 
         # Step 2: 传导分析
         yield f"data: {json.dumps({'step': 2, 'status': 'analyzing', 'message': '分析产业链传导...'})}\n\n"
@@ -125,6 +149,8 @@ async def analyze_event_stream(request: AnalyzeRequest):
 
     return StreamingResponse(
         event_generator(),
+        media_type="text/event-stream"
+    )
         media_type="text/event-stream"
     )
 
@@ -170,6 +196,70 @@ async def get_stats():
         "llm_provider": settings.LLM_PROVIDER,
         "model": settings.ANTHROPIC_MODEL if settings.LLM_PROVIDER == "claude" else settings.OPENAI_MODEL
     }
+
+
+@app.get("/api/v1/knowledge-graph/stats")
+async def get_knowledge_graph_stats():
+    """获取知识图谱统计（包含动态学习结果）"""
+    from .services.causal_reasoning import get_industry_graph, get_dynamic_learner
+
+    kg = get_industry_graph()
+    learner = get_dynamic_learner()
+
+    return {
+        "base_graph": kg.get_statistics(),
+        "dynamic_learning": learner.get_statistics(),
+        "potential_nodes": learner.get_potential_nodes()
+    }
+
+
+@app.get("/api/v1/knowledge-graph/relationships")
+async def get_dynamic_relationships(min_confidence: float = 0.5):
+    """获取动态学习的关系"""
+    from .services.causal_reasoning import get_dynamic_learner
+
+    learner = get_dynamic_learner()
+    return {
+        "relationships": learner.get_dynamic_relationships(min_confidence)
+    }
+
+
+@app.post("/api/v1/knowledge-graph/merge")
+async def merge_knowledge_graph():
+    """将动态学习结果合并到基础图谱"""
+    from .services.causal_reasoning import get_dynamic_learner
+
+    learner = get_dynamic_learner()
+    merged_path = learner.merge_to_graph()
+
+    return {
+        "success": bool(merged_path),
+        "merged_path": merged_path,
+        "message": "图谱合并完成" if merged_path else "合并失败"
+    }
+
+
+@app.post("/api/v1/knowledge-graph/save")
+async def save_knowledge_discoveries():
+    """保存动态学习的发现"""
+    from .services.causal_reasoning import get_dynamic_learner
+
+    learner = get_dynamic_learner()
+    await learner.save_discoveries()
+
+    return {
+        "success": True,
+        "statistics": learner.get_statistics()
+    }
+
+
+@app.get("/api/v1/history/events")
+async def get_learning_history():
+    """获取历史事件学习统计"""
+    from .services.impact_quant import get_backtest_engine
+
+    engine = get_backtest_engine()
+    return engine.get_statistics()
 
 
 @app.get("/api/v1/network-graph")

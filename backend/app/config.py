@@ -43,6 +43,10 @@ class Settings(BaseSettings):
     # 日志
     LOG_LEVEL: str = "INFO"
 
+    # API 认证
+    API_AUTH_ENABLED: bool = False  # 设为 True 启用认证
+    API_KEY: Optional[str] = None  # 设置 API Key
+
     class Config:
         env_file = ".env"
         env_file_encoding = "utf-8"

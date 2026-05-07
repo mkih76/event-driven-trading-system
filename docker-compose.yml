@@ -29,6 +29,12 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+        reservations:
+          memory: 128M
     restart: unless-stopped
 
   # Nginx 反向代理（生产环境）
@@ -41,4 +47,10 @@ services:
     depends_on:
       - frontend
       - backend
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+        reservations:
+          memory: 64M
     restart: unless-stopped

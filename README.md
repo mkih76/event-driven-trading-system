@@ -10,24 +10,18 @@
 - **流式响应**: 实时展示 LLM 推理过程（SSE）
 - **可视化**: SVG 交互式传导图谱、情绪仪表盘、历史回测
 - **多 LLM 支持**: SiliconFlow（推荐）/ OpenAI / Claude / Ollama
-- **RAG 增强**: 实时市场数据上下文注入分析
+- **RAG 增强**: 实时市场数据上下文注入分析（默认开启）
+- **动态学习**: 自动从分析结果学习新产业链关系和事件模式
 
-## 一键部署到 VPS
+| 层级 | 技术 |
+|------|------|
+| 后端 | FastAPI · Python 3.11+ · Pydantic · uvicorn |
+| LLM | SiliconFlow · OpenAI · Claude · Ollama |
+| 前端 | Next.js 14 · React 18 · TypeScript · Tailwind CSS |
+| 容器 | Docker · Docker Compose v2 · Nginx |
+| 部署 | Ubuntu / Debian · Let's Encrypt |
 
-```bash
-# SSH 登录 VPS 后，一行命令完成部署
-bash <(curl -sL https://raw.githubusercontent.com/mkih76/event-driven-trading-system/master/deploy.sh)
-```
-
-**最低配置**: 1核 1G（推荐 2G+） | **推荐系统**: Ubuntu 20.04+
-
----
-
-## 本地开发
-
-### 环境要求
-
-- Python 3.11+、Node.js 18+、Docker（可选）
+## 部署说明
 
 ### Docker 部署（本地 / VPS 通用）
 
@@ -39,8 +33,8 @@ cd event-driven-trading-system
 cp .env.example .env
 # 编辑 .env 填入 SILICONFLOW_API_KEY（推荐：https://cloud.siliconflow.cn）
 
-# 启动
-docker-compose up -d
+# 启动（使用 Docker Compose v2）
+docker compose up -d
 
 # 访问
 open http://localhost
@@ -159,25 +153,29 @@ event-trading-system/
 
 ## VPS 部署后管理
 
+> **注意**: 需要 VPS 有 2G+ 内存（ChromaDB 向量模型加载需要 300-500MB）
+
 ```bash
 # 进入目录
 cd /opt/event-trading-system
 
 # 查看日志
-docker-compose logs -f
+docker compose logs -f
 
 # 重启服务
-docker-compose restart
+docker compose restart
 
 # 更新代码
-git pull && docker-compose up -d --build
+git pull && docker compose up -d --build
 
 # 停止服务
-docker-compose down
+docker compose down
 
 # SSL 证书续期（Let's Encrypt 证书有效期 90 天，自动续期已配置）
 certbot renew --dry-run
 ```
+
+> **证书申请说明**: certbot 需要 80 端口可访问，且以 root 权限运行。请确保 VPS 有 root 权限。
 
 如遇问题，先查日志：
 ```bash

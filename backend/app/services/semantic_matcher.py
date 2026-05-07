@@ -4,6 +4,8 @@
 """
 import os
 import hashlib
+import json
+import requests
 from typing import Optional, List, Tuple
 from datetime import datetime
 import logging
@@ -14,21 +16,22 @@ logger = logging.getLogger(__name__)
 CHROMA_PERSIST_DIR = os.path.join(os.path.dirname(__file__), "..", "..", "data", "chroma_db")
 COLLECTION_NAME = "events"
 
-# 向量化模型配置
-EMBEDDING_MODEL = "sentence-transformers/all-MiniLM-L6-v2"  # 轻量级 embedding 模型
+# Jina API 配置
+JINA_API_KEY = os.getenv("JINA_API_KEY")
+JINA_API_URL = "https://api.jina.ai/v1/embeddings"
+JINA_MODEL = "jina-embeddings-v3"
 
 
 class SemanticMatcher:
-    """语义相似事件匹配器"""
+    """语义相似事件匹配器（使用 Jina Embeddings API）"""
 
     def __init__(self):
         self._client = None
         self._collection = None
-        self._embedding_model = None
         self._initialized = False
 
     async def initialize(self):
-        """初始化 ChromaDB 和 embedding 模型"""
+        """初始化 ChromaDB 和 embedding 客户端"""
         if self._initialized:
             return
 
@@ -51,8 +54,11 @@ class SemanticMatcher:
                 metadata={"description": "事件语义向量存储"}
             )
 
-            # 初始化 embedding 模型
-            await self._init_embedding_model()
+            # 检查 Jina API Key
+            if not JINA_API_KEY:
+                logger.warning("JINA_API_KEY 未设置，使用降级匹配")
+            else:
+                logger.info("Jina Embeddings API 准备就绪")
 
             self._initialized = True
             logger.info(f"SemanticMatcher 初始化完成，collection: {COLLECTION_NAME}")
@@ -61,26 +67,27 @@ class SemanticMatcher:
             logger.warning(f"ChromaDB 未安装: {e}，使用关键词降级匹配")
             self._initialized = False
 
-    async def _init_embedding_model(self):
-        """初始化 embedding 模型"""
-        try:
-            from sentence_transformers import SentenceTransformer
-            self._embedding_model = SentenceTransformer(EMBEDDING_MODEL)
-            logger.info(f"Embedding 模型加载成功: {EMBEDDING_MODEL}")
-        except ImportError:
-            logger.warning("sentence-transformers 未安装，embedding 功能受限")
-            self._embedding_model = None
-
     def _get_embedding(self, text: str) -> Optional[List[float]]:
-        """获取文本的向量表示"""
-        if self._embedding_model is None:
+        """通过 Jina API 获取文本的向量表示"""
+        if not JINA_API_KEY:
+            logger.warning("JINA_API_KEY 未配置，无法获取 embedding")
             return None
 
         try:
-            embedding = self._embedding_model.encode(text)
-            return embedding.tolist()
+            headers = {
+                "Authorization": f"Bearer {JINA_API_KEY}",
+                "Content-Type": "application/json"
+            }
+            payload = {
+                "model": JINA_MODEL,
+                "input": text[:8192]  # 限制输入长度
+            }
+            response = requests.post(JINA_API_URL, json=payload, headers=headers, timeout=30)
+            response.raise_for_status()
+            data = response.json()
+            return data["data"][0]["embedding"]
         except Exception as e:
-            logger.error(f"Embedding 失败: {e}")
+            logger.error(f"Jina API 调用失败: {e}")
             return None
 
     async def add_event(

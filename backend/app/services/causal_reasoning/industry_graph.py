@@ -5,6 +5,7 @@
 import json
 import os
 import logging
+import time
 from typing import List, Optional, Dict, Any, Tuple
 from dataclasses import dataclass
 from pathlib import Path
@@ -18,8 +19,10 @@ except ImportError:
 
 logger = logging.getLogger(__name__)
 
-# 图谱数据路径
-GRAPH_DATA_PATH = os.path.join(os.path.dirname(__file__), "graph_data.json")
+# 图谱数据路径（可配置）
+GRAPH_DATA_PATH = os.getenv("KNOWLEDGE_GRAPH_JSON_PATH", os.path.join(os.path.dirname(__file__), "graph_data.json"))
+# 自动重载间隔（秒），0 表示不自动重载
+AUTO_RELOAD_INTERVAL = int(os.getenv("KNOWLEDGE_GRAPH_RELOAD_INTERVAL", "0"))
 
 
 @dataclass
@@ -58,7 +61,7 @@ class GraphEdge:
 
 
 class IndustryKnowledgeGraph:
-    """产业链知识图谱"""
+    """产业链知识图谱（支持动态重载）"""
 
     def __init__(self, graph_data_path: str = None):
         self.graph_data_path = graph_data_path or GRAPH_DATA_PATH
@@ -67,15 +70,40 @@ class IndustryKnowledgeGraph:
         self._edges: List[GraphEdge] = []
         self._name_to_id: Dict[str, str] = {}  # 名称/别名 -> id 映射
         self._initialized = False
+        self._last_load_time = 0
+        self._last_mtime = 0
+
+    def _should_reload(self) -> bool:
+        """检查是否需要重新加载（文件变更或自动重载周期到达）"""
+        if not self._initialized:
+            return True
+        # 根据文件修改时间重载
+        if os.path.exists(self.graph_data_path):
+            current_mtime = os.path.getmtime(self.graph_data_path)
+            if current_mtime != self._last_mtime:
+                logger.info(f"图谱文件 {self.graph_data_path} 已修改，触发重载")
+                return True
+        # 自动周期重载
+        if AUTO_RELOAD_INTERVAL > 0:
+            if time.time() - self._last_load_time > AUTO_RELOAD_INTERVAL:
+                logger.info(f"自动重载间隔 {AUTO_RELOAD_INTERVAL}s 到期，触发重载")
+                return True
+        return False
 
     def _load_data(self) -> bool:
-        """加载图谱数据"""
-        if self._initialized:
+        """加载图谱数据（自动检测重载）"""
+        if not self._should_reload():
             return True
 
         try:
             with open(self.graph_data_path, 'r', encoding='utf-8') as f:
                 data = json.load(f)
+
+            # 清空现有数据
+            self._nodes.clear()
+            self._edges.clear()
+            self._name_to_id.clear()
+            self._graph = None
 
             # 加载节点
             for node_data in data.get("industries", []):
@@ -110,11 +138,80 @@ class IndustryKnowledgeGraph:
                 self._edges.append(edge)
 
             self._initialized = True
+            self._last_load_time = time.time()
+            if os.path.exists(self.graph_data_path):
+                self._last_mtime = os.path.getmtime(self.graph_data_path)
             logger.info(f"图谱数据加载完成: {len(self._nodes)} 节点, {len(self._edges)} 边")
+            # 重新构建 networkx 图
+            self.build_graph()
             return True
 
         except Exception as e:
             logger.error(f"加载图谱数据失败: {e}")
+            return False
+
+    def reload_from_json(self, json_data: dict) -> bool:
+        """
+        从给定的 JSON 字典重新加载图谱数据（用于 API 动态更新）
+
+        Args:
+            json_data: 包含 "industries" 和 "relationships" 的字典
+
+        Returns:
+            是否成功
+        """
+        try:
+            # 清空现有数据
+            self._nodes.clear()
+            self._edges.clear()
+            self._name_to_id.clear()
+            self._graph = None
+
+            # 加载节点
+            for node_data in json_data.get("industries", []):
+                node = GraphNode(
+                    id=node_data["id"],
+                    name=node_data["name"],
+                    aliases=node_data.get("aliases", []),
+                    category=node_data.get("category", ""),
+                    is_tradeable=node_data.get("is_tradeable", False),
+                    related_etf=node_data.get("related_etf", []),
+                    a_share=node_data.get("a_share", []),
+                    us_stock=node_data.get("us_stock", [])
+                )
+                self._nodes[node.id] = node
+                self._name_to_id[node.name] = node.id
+                for alias in node.aliases:
+                    self._name_to_id[alias] = node.id
+
+            # 加载边
+            for edge_data in json_data.get("relationships", []):
+                edge = GraphEdge(
+                    from_node=edge_data["from"],
+                    to_node=edge_data["to"],
+                    relation_type=edge_data["relation_type"],
+                    transmission_rate=edge_data.get("transmission_rate", 0.5),
+                    time_lag_days=edge_data.get("time_lag_days", 7),
+                    confidence=edge_data.get("confidence", 0.8),
+                    description=edge_data.get("description", "")
+                )
+                self._edges.append(edge)
+
+            self._initialized = True
+            self._last_load_time = time.time()
+            # 保存到文件（可选）
+            try:
+                with open(self.graph_data_path, 'w', encoding='utf-8') as f:
+                    json.dump(json_data, f, indent=2, ensure_ascii=False)
+                self._last_mtime = os.path.getmtime(self.graph_data_path)
+            except Exception as e:
+                logger.warning(f"保存图谱文件失败: {e}")
+            self.build_graph()
+            logger.info(f"图谱动态重载完成: {len(self._nodes)} 节点, {len(self._edges)} 边")
+            return True
+
+        except Exception as e:
+            logger.error(f"动态重载图谱失败: {e}")
             return False
 
     def build_graph(self) -> Optional[Any]:
@@ -151,6 +248,54 @@ class IndustryKnowledgeGraph:
 
         logger.info(f"networkx 图谱构建完成: {self._graph.number_of_nodes()} 节点, {self._graph.number_of_edges()} 边")
         return self._graph
+
+    def add_dynamic_relationships(self, dynamic_relationships: List[Dict[str, Any]]):
+        """
+        添加动态学习的关系到图谱
+
+        Args:
+            dynamic_relationships: 动态发现的关系列表
+        """
+        if not dynamic_relationships:
+            return
+
+        if self._graph is None:
+            self.build_graph()
+
+        for rel in dynamic_relationships:
+            from_id = rel.get("from")
+            to_id = rel.get("to")
+
+            if not from_id or not to_id:
+                continue
+
+            # 添加节点（如果不存在）
+            if from_id not in self._graph:
+                self._graph.add_node(from_id, name=from_id, category="动态学习", is_tradeable=False)
+            if to_id not in self._graph:
+                self._graph.add_node(to_id, name=to_id, category="动态学习", is_tradeable=False)
+
+            # 添加边（使用更新版本的参数）
+            if self._graph.has_edge(from_id, to_id):
+                # 更新现有边
+                existing = self._graph.edges[from_id, to_id]
+                new_confidence = max(existing.get("confidence", 0.5), rel.get("confidence", 0.5))
+                new_rate = (existing.get("transmission_rate", 0.5) + rel.get("transmission_rate", 0.5)) / 2
+                self._graph.edges[from_id, to_id]["confidence"] = new_confidence
+                self._graph.edges[from_id, to_id]["transmission_rate"] = new_rate
+            else:
+                # 添加新边
+                self._graph.add_edge(
+                    from_id,
+                    to_id,
+                    relation_type=rel.get("relation_type", "成本传导"),
+                    transmission_rate=rel.get("transmission_rate", 0.5),
+                    time_lag_days=rel.get("time_lag_days", 7),
+                    confidence=rel.get("confidence", 0.5),
+                    description=f"动态学习发现 (证据数: {rel.get('evidence_count', 1)})"
+                )
+
+        logger.info(f"动态关系已添加: {len(dynamic_relationships)} 条")
 
     @property
     def graph(self) -> Optional[Any]:

@@ -3,10 +3,14 @@ LLM 因果传导增强模块
 使用 LLM 推理增强知识图谱路径，评估传导方向、置信度、强度
 """
 import logging
-from typing import Optional, List
+import hashlib
+import json
+import time
+from typing import Optional, List, Dict, Tuple
 from pydantic import BaseModel, Field
 from ..llm_client import get_llm, RuleBasedFallbackClient
 from ..analysis import EventAnalysisResult, TransmissionChainResult
+from ..config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -96,22 +100,27 @@ LLM_REASONING_PROMPT = """# 角色
 
 
 class LLMReasoner:
-    """LLM 因果传导推理器"""
+    """LLM 因果传导推理器（带缓存和 token 限制）"""
 
     def __init__(self):
         self._initialized = False
+        self._cache: Dict[str, Tuple[EnhancedTransmission, float]] = {}  # key -> (result, timestamp)
 
     async def initialize(self):
         """初始化"""
         if self._initialized:
             return
         self._initialized = True
-        logger.info("LLMReasoner 初始化完成")
+        logger.info("LLMReasoner 初始化完成，缓存 TTL: %d 秒", settings.LLM_CACHE_TTL)
 
     def _format_chain_paths(self, transmission: TransmissionChainResult) -> str:
-        """格式化传导路径为字符串"""
+        """格式化传导路径为字符串，并限制长度以减少 token"""
         paths = []
+        max_steps = 10  # 只保留前10个最相关的传导步骤（按 step 顺序，通常步数越前越重要）
         for i, step in enumerate(transmission.transmission_chain):
+            if i >= max_steps:
+                paths.append(f"... 以及后续 {len(transmission.transmission_chain) - max_steps} 个传导步骤（已截断）")
+                break
             paths.append(
                 f"Step {i+1}: {step.from_industry} → {step.to_industry} "
                 f"({step.relation_type.value}, 传导率{step.transmission_rate:.0%}, "
@@ -119,13 +128,23 @@ class LLMReasoner:
             )
         return "\n".join(paths)
 
+    def _get_cache_key(self, event_analysis: EventAnalysisResult, transmission: TransmissionChainResult) -> str:
+        """生成缓存键（基于事件摘要、类型、情绪和传导路径的哈希）"""
+        # 只使用稳定的字段：事件摘要、事件类型、情绪值、传导路径的摘要
+        chain_summary = "|".join([
+            f"{s.from_industry}->{s.to_industry}:{s.relation_type.value}:{s.transmission_rate}"
+            for s in transmission.transmission_chain[:10]  # 前10步足够区分
+        ])
+        content = f"{event_analysis.summary}|{event_analysis.event_type.value}|{event_analysis.sentiment}|{chain_summary}"
+        return hashlib.md5(content.encode()).hexdigest()
+
     async def enhance_transmission(
         self,
         event_analysis: EventAnalysisResult,
         transmission: TransmissionChainResult
     ) -> EnhancedTransmission:
         """
-        使用 LLM 增强传导分析
+        使用 LLM 增强传导分析（带缓存）
 
         Args:
             event_analysis: 事件分析结果
@@ -136,7 +155,21 @@ class LLMReasoner:
         """
         await self.initialize()
 
+        # 检查缓存
+        cache_key = self._get_cache_key(event_analysis, transmission)
+        now = time.time()
+        if cache_key in self._cache:
+            result, timestamp = self._cache[cache_key]
+            if now - timestamp < settings.LLM_CACHE_TTL:
+                logger.info(f"使用缓存的 LLM 增强结果，key={cache_key[:8]}...")
+                return result
+            else:
+                del self._cache[cache_key]
+
         chain_paths = self._format_chain_paths(transmission)
+        # 额外截断 prompt 防止过长（保留前 2000 字符）
+        if len(chain_paths) > 2000:
+            chain_paths = chain_paths[:2000] + "\n... (已截断)"
 
         prompt = LLM_REASONING_PROMPT.format(
             event_summary=event_analysis.summary,
@@ -148,14 +181,23 @@ class LLMReasoner:
         try:
             llm = get_llm()
             if isinstance(llm, RuleBasedFallbackClient):
-                return self._fallback_enhance(transmission)
+                result = self._fallback_enhance(transmission)
+                # 降级结果也缓存较短时间（10分钟）
+                self._cache[cache_key] = (result, now)
+                return result
 
             result = await llm.complete(prompt=prompt, response_model=EnhancedTransmission)
+            # 缓存成功结果
+            self._cache[cache_key] = (result, now)
+            logger.info(f"LLM 增强完成并已缓存，key={cache_key[:8]}...")
             return result
 
         except Exception as e:
             logger.warning(f"LLM 增强失败: {e}，使用降级模式")
-            return self._fallback_enhance(transmission)
+            result = self._fallback_enhance(transmission)
+            # 错误降级也缓存较短时间（5分钟）
+            self._cache[cache_key] = (result, now)
+            return result
 
     def _fallback_enhance(
         self,

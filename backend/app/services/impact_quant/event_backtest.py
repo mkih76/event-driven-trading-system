@@ -45,10 +45,12 @@ class EventMatch:
 class EventBacktestEngine:
     """事件回测引擎 - 基于历史事件库进行模式匹配和信号验证"""
 
-    def __init__(self, history_data_path: Optional[str] = None):
+    def __init__(self, history_data_path: Optional[str] = None, auto_save: bool = True):
         self.history_data_path = Path(history_data_path) if history_data_path else HISTORY_DATA_PATH
+        self.auto_save = auto_save
         self._events: List[Dict[str, Any]] = []
         self._load_history()
+        self._new_events: List[Dict[str, Any]] = []  # 新增待保存事件
 
     def _load_history(self):
         """加载历史事件数据"""
@@ -60,6 +62,124 @@ class EventBacktestEngine:
         except Exception as e:
             logger.error(f"加载历史事件失败: {e}")
             self._events = []
+
+    def _save_history(self):
+        """保存历史事件（追加新事件）"""
+        if not self._new_events:
+            return
+
+        try:
+            # 读取现有数据
+            with open(self.history_data_path, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+
+            # 追加新事件
+            data["events"].extend(self._new_events)
+
+            # 保存
+            with open(self.history_data_path, 'w', encoding='utf-8') as f:
+                json.dump(data, f, ensure_ascii=False, indent=2)
+
+            logger.info(f"历史事件库已更新，追加 {len(self._new_events)} 条")
+            self._new_events.clear()
+
+        except Exception as e:
+            logger.error(f"保存历史事件失败: {e}")
+
+    def add_event(
+        self,
+        title: str,
+        event_type: str,
+        core_entities: List[str],
+        sentiment: float,
+        direct_impacts: List[Dict[str, Any]],
+        transmission_chain: List[Dict[str, Any]],
+        investment_signals: List[Dict[str, Any]],
+        actual_outcome: str = "",
+        win_rate: float = 0.5
+    ):
+        """
+        添加新事件到历史库
+
+        Args:
+            title: 事件标题
+            event_type: 事件类型
+            core_entities: 核心实体
+            sentiment: 情绪值
+            direct_impacts: 直接影响列表
+            transmission_chain: 传导链
+            investment_signals: 投资信号
+            actual_outcome: 实际结果
+            win_rate: 胜率
+        """
+        event_id = f"evt_{len(self._events) + len(self._new_events) + 1:03d}"
+
+        new_event = {
+            "id": event_id,
+            "title": title,
+            "date": datetime.now().strftime("%Y-%m-%d"),
+            "event_type": event_type,
+            "core_entities": core_entities,
+            "sentiment": sentiment,
+            "event_intensity": "中",
+            "direct_impacts": direct_impacts,
+            "transmission_chain": transmission_chain,
+            "investment_signals": investment_signals,
+            "actual_outcome": actual_outcome,
+            "win_rate": win_rate,
+            "source": "auto_learned"
+        }
+
+        self._new_events.append(new_event)
+
+        if self.auto_save:
+            self._save_history()
+
+    def learn_from_analysis(
+        self,
+        event_title: str,
+        event_type: str,
+        core_entities: List[str],
+        sentiment: float,
+        direct_impacts: List[Dict],
+        transmission_chain: List[Dict],
+        signals: List[Dict]
+    ):
+        """
+        从分析结果学习并添加到历史库
+
+        Args:
+            event_title: 事件标题
+            event_type: 事件类型
+            core_entities: 核心实体
+            sentiment: 情绪值
+            direct_impacts: 直接影响
+            transmission_chain: 传导链
+            signals: 投资信号
+        """
+        # 检查是否已存在相似事件（避免重复）
+        existing_matches = self.find_similar_events(
+            title=event_title,
+            event_type=event_type,
+            core_entities=core_entities,
+            sentiment=sentiment
+        )
+
+        # 如果相似度太高，跳过（避免重复）
+        if existing_matches and existing_matches[0].similarity_score > 0.85:
+            logger.debug(f"跳过重复事件: {event_title}")
+            return
+
+        # 添加到历史库
+        self.add_event(
+            title=event_title,
+            event_type=event_type,
+            core_entities=core_entities,
+            sentiment=sentiment,
+            direct_impacts=direct_impacts,
+            transmission_chain=transmission_chain,
+            investment_signals=signals
+        )
 
     @property
     def event_count(self) -> int:
