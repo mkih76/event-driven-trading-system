@@ -24,7 +24,7 @@ class Settings(BaseSettings):
     # SiliconFlow (硅基流动)
     SILICONFLOW_API_KEY: Optional[str] = None
     SILICONFLOW_BASE_URL: str = "https://api.siliconflow.cn/v1"
-    SILICONFLOW_MODEL: str = "Qwen/Qwen2.5-7B-Instruct"  # 或其他可用模型
+    SILICONFLOW_MODEL: str = "deepseek-ai/DeepSeek-V3"  # 或其他可用模型
 
     # Claude (Anthropic)
     ANTHROPIC_API_KEY: Optional[str] = None

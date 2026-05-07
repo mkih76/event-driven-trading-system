@@ -4,10 +4,10 @@
 import time
 import hashlib
 import json
-from typing import Optional
+from typing import Optional, Tuple
 from datetime import datetime
 from pydantic import BaseModel
-from .llm_client import get_llm
+from .llm_client import get_llm, LLMError, LLMUnavailableError, RuleBasedFallbackClient
 from .prompts import (
     format_event_analysis_prompt,
     format_chain_transmission_prompt,
@@ -28,6 +28,19 @@ from ..schemas.models import (
 )
 
 
+class AnalysisDegradation(BaseModel):
+    """降级状态信息"""
+    is_degraded: bool = False
+    reason: str = ""
+    fallback_used: str = ""
+
+    @property
+    def message(self) -> str:
+        if self.is_degraded:
+            return f"当前使用规则模式，分析精度可能下降。({self.reason})"
+        return ""
+
+
 class SignalList(BaseModel):
     """信号列表响应"""
     signals: list[StockSignal]
@@ -40,6 +53,12 @@ class EventAnalysisService:
         self.llm = get_llm()
         # 简单内存缓存
         self._cache = {}
+        self._degradation = AnalysisDegradation()
+
+    @property
+    def degradation(self) -> AnalysisDegradation:
+        """获取当前降级状态"""
+        return self._degradation
 
     def _get_cache_key(self, title: str, content: str = "") -> str:
         """生成缓存键"""
@@ -61,7 +80,7 @@ class EventAnalysisService:
         title: str,
         content: str = "",
         use_cache: bool = True
-    ) -> FullAnalysisResult:
+    ) -> Tuple[FullAnalysisResult, AnalysisDegradation]:
         """
         完整的事件分析流程
 
@@ -70,6 +89,8 @@ class EventAnalysisService:
         2. 产业链传导 (LLM)
         3. 信号生成 (LLM)
         4. 结果整合
+
+        返回: (result, degradation_info)
         """
         start_time = time.time()
         cache_key = self._get_cache_key(title, content)
@@ -78,9 +99,21 @@ class EventAnalysisService:
         if use_cache:
             cached = self._load_from_cache(cache_key)
             if cached:
-                return cached
+                return cached, self._degradation
 
         print(f"[分析开始] {title[:50]}...")
+
+        # 检查 LLM 可用性
+        llm = get_llm()
+        if isinstance(llm, RuleBasedFallbackClient):
+            self._degradation = AnalysisDegradation(
+                is_degraded=True,
+                reason="LLM服务不可用",
+                fallback_used="RuleBasedFallback"
+            )
+            print("[警告] LLM不可用，使用规则降级模式")
+        else:
+            self._degradation = AnalysisDegradation()
 
         # Step 1: 事件理解
         event_analysis = await self._analyze_event(title, content)
@@ -113,7 +146,7 @@ class EventAnalysisService:
 
         print(f"[分析完成] 耗时: {processing_time}ms")
 
-        return result
+        return result, self._degradation
 
     async def _analyze_event(
         self,
@@ -200,7 +233,7 @@ class EventAnalysisService:
         content: str = "",
         use_cache: bool = True,
         include_real_time: bool = True
-    ) -> FullAnalysisResult:
+    ) -> Tuple[FullAnalysisResult, AnalysisDegradation]:
         """
         RAG 增强的事件分析
 
@@ -210,6 +243,8 @@ class EventAnalysisService:
         3. 产业链传导 (LLM)
         4. 信号生成 (LLM)
         5. 结果整合
+
+        返回: (result, degradation_info)
         """
         start_time = time.time()
         cache_key = self._get_cache_key(title, content)
@@ -218,9 +253,20 @@ class EventAnalysisService:
         if use_cache:
             cached = self._load_from_cache(cache_key)
             if cached:
-                return cached
+                return cached, self._degradation
 
         print(f"[RAG分析开始] {title[:50]}...")
+
+        # 检查 LLM 可用性
+        llm = get_llm()
+        if isinstance(llm, RuleBasedFallbackClient):
+            self._degradation = AnalysisDegradation(
+                is_degraded=True,
+                reason="LLM服务不可用",
+                fallback_used="RuleBasedFallback"
+            )
+        else:
+            self._degradation = AnalysisDegradation()
 
         # Step 0: 获取实时上下文
         real_time_context = ""
@@ -271,7 +317,7 @@ class EventAnalysisService:
 
         print(f"[分析完成] 耗时: {processing_time}ms, RAG启用: {bool(real_time_context)}")
 
-        return result
+        return result, self._degradation
 
     async def _analyze_event_with_context(
         self,

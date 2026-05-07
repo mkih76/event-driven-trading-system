@@ -67,6 +67,7 @@ export interface AnalyzeResponse {
   data?: FullAnalysis;
   error?: string;
   cached: boolean;
+  degradation_message?: string;
 }
 
 export interface StreamEvent {

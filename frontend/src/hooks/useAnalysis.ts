@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react';
 import type { FullAnalysis, StreamEvent, AnalyzeResponse, ExampleEvent } from '@/types';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://host.docker.internal:8080';
+const API_BASE = typeof window !== 'undefined' ? '' : (process.env.NEXT_PUBLIC_API_URL || 'http://host.docker.internal:8080');
 
 export function useAnalysis() {
   const [loading, setLoading] = useState(false);
@@ -10,7 +10,7 @@ export function useAnalysis() {
   const [currentStep, setCurrentStep] = useState<number>(0);
   const [stepMessage, setStepMessage] = useState<string>('');
 
-  const analyze = useCallback(async (title: string, content: string = '') => {
+  const analyze = useCallback(async (title: string, content: string = ''): Promise<AnalyzeResponse> => {
     setLoading(true);
     setError(null);
     setResult(null);
@@ -32,7 +32,7 @@ export function useAnalysis() {
       }
 
       setResult(data.data!);
-      return data.data!;
+      return data;
     } catch (err) {
       const message = err instanceof Error ? err.message : '未知错误';
       setError(message);
@@ -48,9 +48,22 @@ export function useAnalysis() {
     setResult(null);
     setCurrentStep(0);
 
-    const eventAnalysis: any = { direct_impacts: [] };
-    const transmission: any = { transmission_chain: [], investment_signals: [] };
+    const eventAnalysis: any = {
+      direct_impacts: [],
+      core_entities: [],
+      event_type: '',
+      sentiment: 0,
+      event_intensity: '中',
+      summary: '',
+    };
+    const transmission: any = {
+      transmission_chain: [],
+      affected_industries: [],
+      investment_signals: [],
+    };
     const signals: any[] = [];
+
+    let hasError = false;
 
     try {
       const response = await fetch(`${API_BASE}/api/v1/analyze/stream`, {
@@ -115,6 +128,7 @@ export function useAnalysis() {
               }
 
               if (event.status === 'error') {
+                hasError = true;
                 setError(event.message || '分析出错');
               }
             } catch (e) {
@@ -124,7 +138,7 @@ export function useAnalysis() {
         }
       }
 
-      if (!error) {
+      if (!hasError) {
         const fullResult: FullAnalysis = {
           input_title: title,
           input_content: content,
@@ -144,7 +158,7 @@ export function useAnalysis() {
     } finally {
       setLoading(false);
     }
-  }, [error]);
+  }, []);
 
   const clearResult = useCallback(() => {
     setResult(null);
@@ -174,9 +188,16 @@ export function useExamples() {
     try {
       const response = await fetch(`${API_BASE}/api/v1/examples`);
       const data = await response.json();
-      setExamples(data);
+      // 确保数据是数组
+      if (Array.isArray(data)) {
+        setExamples(data);
+      } else {
+        console.error('获取示例失败：返回数据不是数组', data);
+        setExamples([]);
+      }
     } catch (err) {
       console.error('获取示例失败:', err);
+      setExamples([]);
     } finally {
       setLoading(false);
     }

@@ -9,7 +9,7 @@ import json
 
 from .config import settings
 from .schemas.models import AnalyzeRequest, AnalyzeResponse, FullAnalysisResult
-from .services.analysis import get_analysis_service
+from .services.analysis import get_analysis_service, AnalysisDegradation
 
 
 app = FastAPI(
@@ -57,7 +57,7 @@ async def analyze_event(request: AnalyzeRequest):
     try:
         service = get_analysis_service()
 
-        result = await service.analyze(
+        result, degradation = await service.analyze(
             title=request.title,
             content=request.content,
             use_cache=request.use_cache
@@ -65,7 +65,9 @@ async def analyze_event(request: AnalyzeRequest):
 
         return AnalyzeResponse(
             success=True,
-            data=result
+            data=result,
+            cached=degradation.is_degraded,
+            degradation_message=degradation.message if degradation.is_degraded else None
         )
 
     except Exception as e:
@@ -168,6 +170,30 @@ async def get_stats():
         "llm_provider": settings.LLM_PROVIDER,
         "model": settings.ANTHROPIC_MODEL if settings.LLM_PROVIDER == "claude" else settings.OPENAI_MODEL
     }
+
+
+@app.get("/api/v1/network-graph")
+async def get_network_graph():
+    """获取网络图数据（供前端可视化使用）"""
+    from .services.network_graph import get_network_graph_generator
+
+    # 获取最近的传导分析结果来生成示例图
+    service = get_analysis_service()
+    if not service._cache:
+        return {"nodes": [], "edges": [], "total_industries": 0, "total_edges": 0}
+
+    # 获取最后一个分析结果
+    last_result = list(service._cache.values())[-1]
+    transmission = last_result.get("transmission")
+
+    if not transmission or not transmission.get("transmission_chain"):
+        return {"nodes": [], "edges": [], "total_industries": 0, "total_edges": 0}
+
+    from .schemas.models import TransmissionChainResult
+    transmission_obj = TransmissionChainResult(**transmission)
+
+    generator = get_network_graph_generator()
+    return generator.generate_json(transmission_obj)
 
 
 if __name__ == "__main__":

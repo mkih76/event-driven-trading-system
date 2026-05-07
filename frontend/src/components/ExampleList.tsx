@@ -8,7 +8,7 @@ interface ExampleListProps {
 }
 
 export function ExampleList({ examples, onSelect }: ExampleListProps) {
-  if (examples.length === 0) {
+  if (!examples || examples.length === 0) {
     return null;
   }
 

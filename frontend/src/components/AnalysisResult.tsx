@@ -39,7 +39,7 @@ export function AnalysisResult({ result }: AnalysisResultProps) {
 
   const eventAnalysis = result.event_analysis;
   const transmission = result.transmission;
-  const signals = result.signals;
+  const signals = result.signals || [];
 
   const sentimentColor =
     eventAnalysis.sentiment > 0
@@ -97,7 +97,7 @@ export function AnalysisResult({ result }: AnalysisResultProps) {
         <div className="bg-white rounded-xl shadow p-5">
           <p className="text-sm text-slate-500 mb-1">涉及实体</p>
           <div className="flex flex-wrap gap-1">
-            {eventAnalysis.core_entities.slice(0, 3).map((entity, i) => (
+            {eventAnalysis.core_entities?.slice(0, 3).map((entity, i) => (
               <span
                 key={i}
                 className="px-2 py-0.5 bg-primary/10 text-primary text-xs rounded"
@@ -105,9 +105,9 @@ export function AnalysisResult({ result }: AnalysisResultProps) {
                 {entity}
               </span>
             ))}
-            {eventAnalysis.core_entities.length > 3 && (
+            {(eventAnalysis.core_entities?.length || 0) > 3 && (
               <span className="text-xs text-slate-400">
-                +{eventAnalysis.core_entities.length - 3}
+                +{(eventAnalysis.core_entities?.length || 0) - 3}
               </span>
             )}
           </div>
@@ -335,7 +335,7 @@ function SignalCard({ signal }: { signal: StockSignal }) {
         </div>
       </div>
 
-      {signal.risk_factors.length > 0 && (
+      {(signal.risk_factors || []).length > 0 && (
         <div className="mt-3 pt-3 border-t border-slate-200">
           <p className="text-xs font-medium text-slate-500 mb-1">风险因素</p>
           <div className="flex flex-wrap gap-1">
@@ -351,7 +351,7 @@ function SignalCard({ signal }: { signal: StockSignal }) {
         </div>
       )}
 
-      {signal.related_stocks.length > 0 && (
+      {(signal.related_stocks || []).length > 0 && (
         <div className="mt-3">
           <p className="text-xs font-medium text-slate-500 mb-1">相关股票</p>
           <div className="flex flex-wrap gap-1">

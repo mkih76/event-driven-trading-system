@@ -18,3 +18,11 @@ pytest-asyncio>=0.23.0
 
 # 类型提示
 python-dotenv>=1.0.0
+
+# 向量数据库与语义搜索
+chromadb>=0.4.0
+sentence-transformers>=2.2.0
+
+# 网络可视化
+networkx>=3.1
+pyvis>=0.3.0

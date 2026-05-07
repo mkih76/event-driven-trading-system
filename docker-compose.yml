@@ -9,9 +9,12 @@ services:
     ports:
       - "8080:8080"
     environment:
-      - LLM_PROVIDER=${LLM_PROVIDER:-claude}
+      - LLM_PROVIDER=${LLM_PROVIDER:-siliconflow}
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
       - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - SILICONFLOW_API_KEY=${SILICONFLOW_API_KEY}
+      - SILICONFLOW_BASE_URL=${SILICONFLOW_BASE_URL:-https://api.siliconflow.cn/v1}
+      - SILICONFLOW_MODEL=${SILICONFLOW_MODEL:-Qwen/Qwen2.5-7B-Instruct}
     volumes:
       - ./data:/app/data
     restart: unless-stopped

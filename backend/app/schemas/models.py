@@ -23,6 +23,10 @@ class ImpactDirection(str, Enum):
     POSITIVE = "利好"
     NEGATIVE = "利空"
     NEUTRAL = "中性"
+    UP = "上行"
+    DOWN = "下行"
+    NONE = "无"
+    NO_EFFECT = "无影响"
 
 
 class ImpactMagnitude(str, Enum):
@@ -30,6 +34,10 @@ class ImpactMagnitude(str, Enum):
     HIGH = "高"
     MEDIUM = "中"
     LOW = "低"
+    SIGNIFICANT = "显著"
+    MINOR = "轻微"
+    SEVERE = "严重"
+    NONE = "无"
 
 
 class SignalType(str, Enum):
@@ -37,6 +45,10 @@ class SignalType(str, Enum):
     BUY = "BUY"
     SELL = "SELL"
     HOLD = "HOLD"
+    LONG = "做多"
+    SHORT = "做空"
+    NEUTRAL = "中性"
+    WAIT = "观望"
 
 
 class TransmissionRelationType(str, Enum):
@@ -48,6 +60,10 @@ class TransmissionRelationType(str, Enum):
     SUPPLY_UP = "供给增加"
     SUPPLY_DOWN = "供给减少"
     SUBSTITUTE = "替代效应"       # 替代品需求变化
+    DEMAND_TRANS = "需求传导"
+    COST_TRANS = "成本传导"
+    SUPPLY_TRANS = "供给传导"
+    FINANCIAL = "金融属性"        # 金融属性传导
 
 
 class DirectImpact(BaseModel):
@@ -143,3 +159,4 @@ class AnalyzeResponse(BaseModel):
     data: Optional[FullAnalysisResult] = None
     error: Optional[str] = None
     cached: bool = False
+    degradation_message: Optional[str] = Field(default=None, description="降级模式提示信息")
