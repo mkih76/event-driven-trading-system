@@ -129,20 +129,29 @@ class EventBacktestEngine:
         if type1 == type2:
             return True
 
+        # 关键词包容匹配 - 检查类型1的关键词是否出现在类型2中
+        keywords = ["supply", "oil", "原油", "减产", "能源", "cut", "production"]
+        for kw in keywords:
+            if kw in type1 and kw in type2:
+                return True
+
         # 类型映射
         type_groups = {
-            "政策": ["政策", "货币", "财政", "监管"],
-            "地缘政治": ["地缘政治", "战争", "冲突", "制裁"],
-            "能源": ["能源", "原油", "天然气", "石油"],
-            "灾难": ["灾难", "灾害", "事故"],
-            "经济数据": ["经济数据", "就业", "通胀", "GDP"],
-            "财报": ["财报", "业绩", "季报", "年报"],
+            "政策": ["政策", "货币", "财政", "监管", "interest", "rate", "加息", "降息"],
+            "地缘政治": ["地缘政治", "战争", "冲突", "制裁", "geopolitical", "war"],
+            "能源": ["能源", "原油", "天然气", "石油", "oil", "能源", "supply", "cut", "减产", "供给"],
+            "灾难": ["灾难", "灾害", "事故", "disaster", "accident"],
+            "经济数据": ["经济数据", "就业", "通胀", "GDP", "economic", "data"],
+            "财报": ["财报", "业绩", "季报", "年报", "earnings", "report"],
+            "供应冲击": ["供应冲击", "供给冲击", "supply_shock", "supply", "cut"],
         }
 
         for group_name, variants in type_groups.items():
-            if type1 in variants or type2 in variants:
-                if type1 in variants and type2 in variants:
-                    return True
+            # 检查任一类型是否属于该组
+            in_group1 = type1 in variants or any(type1.find(v) >= 0 for v in variants if len(v) > 2)
+            in_group2 = type2 in variants or any(type2.find(v) >= 0 for v in variants if len(v) > 2)
+            if in_group1 and in_group2:
+                return True
 
         return False
 
@@ -301,8 +310,8 @@ class EventBacktestEngine:
 
         # 判断是否可靠
         is_reliable = (
-            match.similarity_score > 0.5 and
-            details["entity_overlap"] > 0.3 and
+            match.similarity_score > 0.4 and
+            details["entity_overlap"] > 0.25 and
             details["type_match"]
         )
 
@@ -360,7 +369,7 @@ class EventBacktestEngine:
             sentiment=sentiment
         )
 
-        if not similar_events or similar_events[0].similarity_score < 0.3:
+        if not similar_events or similar_events[0].similarity_score < 0.2:
             return {
                 "has_historical_reference": False,
                 "adjusted_confidence": signal_confidence,
