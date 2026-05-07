@@ -5,190 +5,186 @@
 ## 功能特性
 
 - **事件理解**: LLM 自动识别事件类型、核心实体、市场情绪
-- **产业链传导**: 自动推理事件在产业链中的传导路径
-- **交易信号**: 生成 BUY/SELL 信号及置信度
-- **流式响应**: 实时展示 LLM 推理过程
-- **可视化展示**: 传导链可视化、情绪仪表盘
+- **产业链传导**: 自动推理事件在产业链中的传导路径（成本传导 / 需求传导 / 替代效应）
+- **交易信号**: 生成做多/做空信号及置信度
+- **流式响应**: 实时展示 LLM 推理过程（SSE）
+- **可视化**: SVG 交互式传导图谱、情绪仪表盘、历史回测
+- **多 LLM 支持**: SiliconFlow（推荐）/ OpenAI / Claude / Ollama
+- **RAG 增强**: 实时市场数据上下文注入分析
 
-## 系统架构
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│                        前端 (Next.js)                        │
-│   事件输入 → 流式展示 → 传导链可视化 → 交易信号                │
-└─────────────────────────────────────────────────────────────┘
-                              ↕
-┌─────────────────────────────────────────────────────────────┐
-│                       后端 (FastAPI)                         │
-│   API → LLM事件分析 → 传导引擎 → 信号生成                     │
-└─────────────────────────────────────────────────────────────┘
-                              ↕
-┌─────────────────────────────────────────────────────────────┐
-│                      LLM Provider                            │
-│              (Claude / OpenAI / Ollama)                      │
-└─────────────────────────────────────────────────────────────┘
-```
-
-## 快速开始
-
-### 1. 环境要求
-
-- Python 3.11+
-- Node.js 18+
-- LLM API Key (Claude / OpenAI)
-
-### 2. 后端设置
+## 一键部署到 VPS
 
 ```bash
-cd backend
+# SSH 登录 VPS 后，一行命令完成部署
+bash <(curl -sL https://raw.githubusercontent.com/mkih76/event-driven-trading-system/master/deploy.sh)
+```
 
-# 创建虚拟环境
-python -m venv venv
-source venv/bin/activate  # Linux/Mac
-# or: venv\Scripts\activate  # Windows
+**最低配置**: 1核 1G（推荐 2G+） | **推荐系统**: Ubuntu 20.04+
 
-# 安装依赖
-pip install -r requirements.txt
+---
 
-# 配置环境变量
+## 本地开发
+
+### 环境要求
+
+- Python 3.11+、Node.js 18+、Docker（可选）
+
+### Docker 部署（本地 / VPS 通用）
+
+```bash
+git clone https://github.com/mkih76/event-driven-trading-system.git
+cd event-driven-trading-system
+
+# 配置 API Key
 cp .env.example .env
-# 编辑 .env 填入你的 API Key
+# 编辑 .env 填入 SILICONFLOW_API_KEY（推荐：https://cloud.siliconflow.cn）
 
-# 运行
-python -m uvicorn app.main:app --reload --port 8080
-```
-
-### 3. 前端设置
-
-```bash
-cd frontend
-
-# 安装依赖
-npm install
-
-# 运行开发服务器
-npm run dev
-```
-
-### 4. 访问
-
-打开浏览器访问 http://localhost:3000
-
-## Docker 部署 (VPS)
-
-```bash
-# 构建并启动
+# 启动
 docker-compose up -d
 
-# 查看日志
-docker-compose logs -f
-
-# 停止
-docker-compose down
+# 访问
+open http://localhost
 ```
 
-## 环境变量
+### 手动部署
 
-### 后端 (.env)
-
-```env
-# LLM 配置 (选择一种)
-ANTHROPIC_API_KEY=your_claude_api_key
-# 或
-OPENAI_API_KEY=your_openai_api_key
-
-# LLM Provider
-LLM_PROVIDER=claude  # openai / ollama
-```
-
-### 前端 (.env.local)
-
-```env
-NEXT_PUBLIC_API_URL=http://localhost:8080
-```
-
-## API 接口
-
-### 分析事件
-
+**后端：**
 ```bash
-POST /api/v1/analyze
-Content-Type: application/json
-
-{
-  "title": "美国与伊朗爆发军事冲突",
-  "content": "详细描述...",
-  "use_cache": true
-}
+cd backend
+python -m venv venv && source venv/bin/activate  # Windows: venv\Scripts\activate
+pip install -r requirements.txt
+cp ../.env.example .env && vi .env  # 填入 API Key
+uvicorn app.main:app --reload --port 8080
 ```
 
-### 流式分析
-
+**前端：**
 ```bash
-POST /api/v1/analyze/stream
-# 返回 Server-Sent Events
+cd frontend
+npm install
+npm run dev
+# 访问 http://localhost:3000
 ```
 
-### 获取示例事件
+---
 
-```bash
-GET /api/v1/examples
-```
+## 快速演示
 
-## 项目结构
-
-```
-event-trading-system/
-├── backend/
-│   ├── app/
-│   │   ├── main.py          # FastAPI 入口
-│   │   ├── config.py       # 配置
-│   │   ├── schemas/        # 数据模型
-│   │   └── services/       # 业务逻辑
-│   │       ├── llm_client.py   # LLM 封装
-│   │       ├── prompts.py      # Prompt 模板
-│   │       └── analysis.py     # 事件分析服务
-│   └── requirements.txt
-│
-├── frontend/
-│   ├── src/
-│   │   ├── app/            # Next.js 页面
-│   │   ├── components/    # React 组件
-│   │   ├── hooks/         # 自定义 Hooks
-│   │   └── types/         # TypeScript 类型
-│   ├── package.json
-│   └── tailwind.config.js
-│
-└── docker-compose.yml
-```
-
-## 使用示例
-
-### 输入事件
+输入事件示例：
 
 ```
 美国与伊朗爆发军事冲突，伊朗封锁霍尔木兹海峡
 ```
 
-### 系统输出
+系统将输出：
 
-1. **事件理解**: 地缘政治事件，情绪 -0.8 (极度利空)
-2. **直接受影响**: 原油供给减少 → 石油开采行业利好
+1. **事件理解**: 地缘政治事件，情绪 -0.85（极度利空）
+2. **直接受影响**: 原油 → 供给减少，利好石油开采
 3. **传导链**:
-   - Step 1: 原油 → 石油加工 (成本传导, 70%, 3天)
-   - Step 2: 石油加工 → 化工 (成本传导, 60%, 7天)
-   - Step 3: 原油 → 航运 (成本传导, 80%, 1天)
-   - Step 4: 航运 → 航空 (成本传导, 70%, 5天)
-4. **交易信号**:
-   - 做多: 中国石油 (601857.SH) - 置信度 85%
-   - 做空: 航空股 - 置信度 75%
+   - 原油 → 石油加工（成本传导, 70%, 3天）
+   - 石油加工 → 化工（成本传导, 60%, 7天）
+   - 原油 → 航运（成本传导, 80%, 1天）
+   - 航运 → 航空（成本传导, 70%, 5天）
+4. **交易信号**: 做多石油股（置信度 85%）、做空航空股（置信度 75%）
+
+---
+
+## API 接口
+
+```bash
+# 普通分析
+POST /api/v1/analyze
+{ "title": "美国与伊朗爆发军事冲突", "content": "..." }
+
+# 流式分析（SSE）
+POST /api/v1/analyze/stream
+
+# 示例事件
+GET /api/v1/examples
+
+# 健康检查
+GET /health
+```
+
+---
+
+## 项目结构
+
+```
+event-trading-system/
+├── deploy.sh              # VPS 一键部署脚本
+├── docker-compose.yml     # 容器编排（含 Nginx 反向代理）
+├── nginx.conf             # Nginx 配置（HTTP + HTTPS 模板）
+├── .env.example           # 环境变量模板
+│
+├── backend/
+│   ├── app/
+│   │   ├── main.py           # FastAPI 入口
+│   │   ├── config.py         # 配置
+│   │   ├── schemas/          # Pydantic 数据模型
+│   │   └── services/
+│   │       ├── llm_client.py  # 多 LLM 封装 + 降级机制
+│   │       ├── prompts.py     # Prompt 模板
+│   │       ├── analysis.py    # 事件分析服务
+│   │       ├── rag_service.py # RAG 实时上下文
+│   │       ├── network_graph.py
+│   │       └── causal_reasoning/   # 因果推理模块
+│   │       └── signal_output/       # 信号解释模块
+│   └── requirements.txt
+│
+└── frontend/
+    ├── src/
+    │   ├── app/page.tsx          # 主页面
+    │   ├── components/
+    │   │   ├── TransmissionGraph.tsx  # SVG 传导图谱
+    │   │   ├── DegradationBanner.tsx # 降级提示
+    │   │   └── Sidebar.tsx
+    │   ├── hooks/useAnalysis.ts  # API Hook
+    │   └── types/index.ts
+    └── Dockerfile
+```
+
+---
 
 ## 技术栈
 
-- **后端**: FastAPI, Python 3.11+, Pydantic, OpenAI/Anthropic SDK
-- **LLM 支持**: OpenAI / Claude / Ollama / **SiliconFlow (硅基流动)**
-- **前端**: Next.js 14, React 18, TypeScript, Tailwind CSS, Recharts
-- **部署**: Docker, Docker Compose
+| 层级 | 技术 |
+|------|------|
+| 后端 | FastAPI · Python 3.11+ · Pydantic · uvicorn |
+| LLM | SiliconFlow · OpenAI · Claude · Ollama |
+| 前端 | Next.js 14 · React 18 · TypeScript · Tailwind CSS |
+| 容器 | Docker · Docker Compose · Nginx |
+| 部署 | Ubuntu / Debian · Let's Encrypt |
+
+---
+
+## VPS 部署后管理
+
+```bash
+# 进入目录
+cd /opt/event-trading-system
+
+# 查看日志
+docker-compose logs -f
+
+# 重启服务
+docker-compose restart
+
+# 更新代码
+git pull && docker-compose up -d --build
+
+# 停止服务
+docker-compose down
+
+# SSL 证书续期（Let's Encrypt 证书有效期 90 天，自动续期已配置）
+certbot renew --dry-run
+```
+
+如遇问题，先查日志：
+```bash
+docker-compose logs backend   # 后端日志
+docker-compose logs frontend  # 前端日志
+docker-compose logs nginx     # Nginx 日志
+```
 
 ## License
 
