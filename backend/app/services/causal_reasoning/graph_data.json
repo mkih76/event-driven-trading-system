@@ -258,7 +258,7 @@
     {
       "from": "oil",
       "to": "oil_exploration",
-      "relation_type": "cost_up",
+      "relation_type": "成本传导",
       "transmission_rate": 0.8,
       "time_lag_days": 1,
       "confidence": 0.95,
@@ -267,7 +267,7 @@
     {
       "from": "oil",
       "to": "oil_refining",
-      "relation_type": "cost_up",
+      "relation_type": "成本传导",
       "transmission_rate": 0.7,
       "time_lag_days": 3,
       "confidence": 0.9,
@@ -276,7 +276,7 @@
     {
       "from": "oil",
       "to": "petrochemical",
-      "relation_type": "cost_up",
+      "relation_type": "成本传导",
       "transmission_rate": 0.6,
       "time_lag_days": 7,
       "confidence": 0.85,
@@ -285,7 +285,7 @@
     {
       "from": "oil",
       "to": "shipping",
-      "relation_type": "cost_up",
+      "relation_type": "成本传导",
       "transmission_rate": 0.75,
       "time_lag_days": 1,
       "confidence": 0.9,
@@ -294,7 +294,7 @@
     {
       "from": "oil",
       "to": "aviation",
-      "relation_type": "cost_up",
+      "relation_type": "成本传导",
       "transmission_rate": 0.7,
       "time_lag_days": 2,
       "confidence": 0.9,
@@ -303,7 +303,7 @@
     {
       "from": "oil",
       "to": "automobile",
-      "relation_type": "cost_up",
+      "relation_type": "成本传导",
       "transmission_rate": 0.3,
       "time_lag_days": 14,
       "confidence": 0.7,
@@ -312,7 +312,7 @@
     {
       "from": "oil",
       "to": "coal",
-      "relation_type": "substitute",
+      "relation_type": "替代效应",
       "transmission_rate": 0.5,
       "time_lag_days": 5,
       "confidence": 0.75,
@@ -321,7 +321,7 @@
     {
       "from": "oil",
       "to": "new_energy",
-      "relation_type": "substitute",
+      "relation_type": "替代效应",
       "transmission_rate": 0.4,
       "time_lag_days": 30,
       "confidence": 0.7,
@@ -330,7 +330,7 @@
     {
       "from": "shipping",
       "to": "aviation",
-      "relation_type": "cost_up",
+      "relation_type": "成本传导",
       "transmission_rate": 0.6,
       "time_lag_days": 5,
       "confidence": 0.8,
@@ -339,7 +339,7 @@
     {
       "from": "gold",
       "to": "bank",
-      "relation_type": "risk_appetite",
+      "relation_type": "风险偏好传导",
       "transmission_rate": 0.4,
       "time_lag_days": 1,
       "confidence": 0.7,
@@ -348,7 +348,7 @@
     {
       "from": "gold",
       "to": "securities",
-      "relation_type": "risk_appetite",
+      "relation_type": "风险偏好传导",
       "transmission_rate": 0.5,
       "time_lag_days": 1,
       "confidence": 0.75,
@@ -357,7 +357,7 @@
     {
       "from": "steel",
       "to": "automobile",
-      "relation_type": "cost_up",
+      "relation_type": "成本传导",
       "transmission_rate": 0.5,
       "time_lag_days": 14,
       "confidence": 0.8,
@@ -366,7 +366,7 @@
     {
       "from": "steel",
       "to": "construction",
-      "relation_type": "cost_up",
+      "relation_type": "成本传导",
       "transmission_rate": 0.7,
       "time_lag_days": 7,
       "confidence": 0.85,
@@ -375,7 +375,7 @@
     {
       "from": "steel",
       "to": "real_estate",
-      "relation_type": "demand_up",
+      "relation_type": "需求增加",
       "transmission_rate": 0.6,
       "time_lag_days": 30,
       "confidence": 0.75,
@@ -384,7 +384,7 @@
     {
       "from": "coal",
       "to": "electric_power",
-      "relation_type": "cost_up",
+      "relation_type": "成本传导",
       "transmission_rate": 0.8,
       "time_lag_days": 3,
       "confidence": 0.9,
@@ -393,7 +393,7 @@
     {
       "from": "coal",
       "to": "steel",
-      "relation_type": "cost_up",
+      "relation_type": "成本传导",
       "transmission_rate": 0.6,
       "time_lag_days": 7,
       "confidence": 0.85,
@@ -402,7 +402,7 @@
     {
       "from": "electric_power",
       "to": "semiconductor",
-      "relation_type": "cost_up",
+      "relation_type": "成本传导",
       "transmission_rate": 0.3,
       "time_lag_days": 14,
       "confidence": 0.7,
@@ -411,7 +411,7 @@
     {
       "from": "electric_power",
       "to": "consumer_electronics",
-      "relation_type": "cost_up",
+      "relation_type": "成本传导",
       "transmission_rate": 0.3,
       "time_lag_days": 14,
       "confidence": 0.7,
@@ -420,7 +420,7 @@
     {
       "from": "new_energy",
       "to": "electric_power",
-      "relation_type": "demand_up",
+      "relation_type": "需求增加",
       "transmission_rate": 0.5,
       "time_lag_days": 30,
       "confidence": 0.75,
@@ -429,7 +429,7 @@
     {
       "from": "pork",
       "to": "agriculture",
-      "relation_type": "demand_up",
+      "relation_type": "需求增加",
       "transmission_rate": 0.6,
       "time_lag_days": 14,
       "confidence": 0.8,
@@ -438,7 +438,7 @@
     {
       "from": "pork",
       "to": "food_beverage",
-      "relation_type": "cost_up",
+      "relation_type": "成本传导",
       "transmission_rate": 0.4,
       "time_lag_days": 7,
       "confidence": 0.7,
@@ -447,7 +447,7 @@
     {
       "from": "semiconductor",
       "to": "consumer_electronics",
-      "relation_type": "supply_up",
+      "relation_type": "供给增加",
       "transmission_rate": 0.7,
       "time_lag_days": 30,
       "confidence": 0.85,
@@ -456,7 +456,7 @@
     {
       "from": "auto_parts",
       "to": "automobile",
-      "relation_type": "supply_up",
+      "relation_type": "供给增加",
       "transmission_rate": 0.8,
       "time_lag_days": 14,
       "confidence": 0.9,
@@ -465,7 +465,7 @@
     {
       "from": "real_estate",
       "to": "bank",
-      "relation_type": "risk_appetite",
+      "relation_type": "风险偏好传导",
       "transmission_rate": 0.6,
       "time_lag_days": 7,
       "confidence": 0.8,
@@ -474,7 +474,7 @@
     {
       "from": "real_estate",
       "to": "construction",
-      "relation_type": "demand_up",
+      "relation_type": "需求增加",
       "transmission_rate": 0.9,
       "time_lag_days": 14,
       "confidence": 0.95,
@@ -483,7 +483,7 @@
     {
       "from": "defense",
       "to": "semiconductor",
-      "relation_type": "demand_up",
+      "relation_type": "需求增加",
       "transmission_rate": 0.3,
       "time_lag_days": 60,
       "confidence": 0.65,
@@ -492,7 +492,7 @@
     {
       "from": "tourism",
       "to": "aviation",
-      "relation_type": "demand_up",
+      "relation_type": "需求增加",
       "transmission_rate": 0.7,
       "time_lag_days": 7,
       "confidence": 0.85,
@@ -501,7 +501,7 @@
     {
       "from": "tourism",
       "to": "retail",
-      "relation_type": "demand_up",
+      "relation_type": "需求增加",
       "transmission_rate": 0.5,
       "time_lag_days": 14,
       "confidence": 0.75,
@@ -510,7 +510,7 @@
     {
       "from": "medical_devices",
       "to": "pharmaceutical",
-      "relation_type": "demand_up",
+      "relation_type": "需求增加",
       "transmission_rate": 0.5,
       "time_lag_days": 30,
       "confidence": 0.7,
@@ -519,7 +519,7 @@
     {
       "from": "nonferrous_metals",
       "to": "semiconductor",
-      "relation_type": "cost_up",
+      "relation_type": "成本传导",
       "transmission_rate": 0.4,
       "time_lag_days": 21,
       "confidence": 0.7,
@@ -528,7 +528,7 @@
     {
       "from": "nonferrous_metals",
       "to": "new_energy",
-      "relation_type": "cost_up",
+      "relation_type": "成本传导",
       "transmission_rate": 0.5,
       "time_lag_days": 21,
       "confidence": 0.75,
@@ -537,7 +537,7 @@
     {
       "from": "natural_gas",
       "to": "petrochemical",
-      "relation_type": "cost_up",
+      "relation_type": "成本传导",
       "transmission_rate": 0.6,
       "time_lag_days": 5,
       "confidence": 0.8,
@@ -546,7 +546,7 @@
     {
       "from": "natural_gas",
       "to": "electric_power",
-      "relation_type": "cost_up",
+      "relation_type": "成本传导",
       "transmission_rate": 0.7,
       "time_lag_days": 3,
       "confidence": 0.85,
@@ -555,7 +555,7 @@
     {
       "from": "insurance",
       "to": "bank",
-      "relation_type": "demand_up",
+      "relation_type": "需求增加",
       "transmission_rate": 0.5,
       "time_lag_days": 30,
       "confidence": 0.7,
