@@ -8,9 +8,9 @@ import json
 import time
 from typing import Optional, List, Dict, Tuple
 from pydantic import BaseModel, Field
-from ..llm_client import get_llm, RuleBasedFallbackClient
-from ..analysis import EventAnalysisResult, TransmissionChainResult
-from ..config import settings
+from app.services.llm_client import get_llm, RuleBasedFallbackClient
+from app.services.analysis import EventAnalysisResult, TransmissionChainResult
+from app.config import settings
 
 logger = logging.getLogger(__name__)
 

@@ -254,9 +254,9 @@ async def save_knowledge_discoveries():
 @app.get("/api/v1/history/events")
 async def get_learning_history():
     """获取历史事件学习统计"""
-    from .services.impact_quant import get_backtest_engine
+    from .services.impact_quant import EventBacktestEngine
 
-    engine = get_backtest_engine()
+    engine = EventBacktestEngine()
     return engine.get_statistics()
 
 
