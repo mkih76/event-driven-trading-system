@@ -1,11 +1,11 @@
-/** @type {import('next').NextConfig} */
+/** @type {import(next).NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
   async rewrites() {
     return [
       {
         source: '/api/:path*',
-        destination: 'http://host.docker.internal:8080/api/:path*',
+        destination: (process.env.NEXT_PUBLIC_API_URL || 'http://backend:8080') + '/:path*',
       },
     ]
   },

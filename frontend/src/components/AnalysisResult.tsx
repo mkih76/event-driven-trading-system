@@ -349,7 +349,7 @@ function SignalCard({ signal }: { signal: StockSignal }) {
               <span className="text-slate-500">相似事件:</span>
               <span className="ml-1 text-slate-700 font-medium">
                 {signal.backtest_reference?.best_match?.title?.slice(0, 15) || "无"}
-                {((signal.backtest_reference?.best_match?.title?.length || 0) > 15) ? "..." : ""}
+                {(signal.backtest_reference?.best_match?.title?.length || 0) > 15 ? "..." : ""}
               </span>
             </div>
             <div>

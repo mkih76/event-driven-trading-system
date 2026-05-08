@@ -82,7 +82,7 @@ CHAIN_TRANSMISSION_PROMPT = """# 角色
             "step": 1,
             "from_industry": "上游行业",
             "to_industry": "下游行业",
-            "relation_type": "成本传导/需求增加/需求减少/供给变化/替代效应",
+            "relation_type": "成本传导/成本下降/需求增加/需求减少/供给增加/供给减少/替代效应",
             "transmission_rate": 0.0到1.0,
             "time_lag_days": 预估天数,
             "impact_magnitude": "高/中/低",
@@ -94,7 +94,7 @@ CHAIN_TRANSMISSION_PROMPT = """# 角色
     "investment_signals": [
         {{
             "industry": "行业名称",
-            "signal": "做多/做空",
+            "signal": "BUY/SELL/HOLD",
             "confidence": 0到100,
             "reasoning": "给出做多或做空的理由"
         }}
