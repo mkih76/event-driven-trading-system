@@ -3,11 +3,14 @@ LLM 客户端统一封装
 支持 OpenAI / Claude / Ollama / SiliconFlow
 """
 import os
+import re
 import json
 import asyncio
 import logging
 from abc import ABC, abstractmethod
-from typing import Optional, Type, TypeVar, Any
+from enum import Enum
+from typing import Optional, TypeVar, Any, Union
+from typing import get_origin, get_args
 from pydantic import BaseModel
 from ..config import settings
 import anthropic
@@ -106,6 +109,9 @@ class BaseLLMClient(ABC):
             else:
                 data = self._extract_json_from_text(text)
 
+        # LLM 偶发返回多选（如"地缘政治/经济数据"），取第一个匹配值
+        data = self._fix_multi_value_enums(data, response_model)
+
         return response_model(**data)
 
     def _extract_json_from_text(self, text: str) -> dict:
@@ -119,6 +125,125 @@ class BaseLLMClient(ABC):
             except json.JSONDecodeError:
                 pass
         raise LLMError(f"响应中找不到有效JSON: {text[:200]}", self.__class__.__name__)
+
+    def _fix_multi_value_enums(self, data: dict, response_model: Type[BaseModel]) -> dict:
+        """
+        处理 LLM 返回多值及别名映射。
+        对 EventAnalysisResult 及其嵌套结构中所有 enum 字段做：
+        1. 多值拆分（/ 或 , 分隔）
+        2. 别名精确映射
+        3. 模糊关键字匹配兜底
+        """
+        # 定义所有需要修复的 enum 字段及其有效值集合
+        # 格式：field_path -> (valid_values_set, alias_map_dict)
+        # field_path 支持点号访问嵌套字段（如 direct_impacts.impact_direction）
+        enum_fields = {
+            # DirectImpact nested fields
+            'direct_impacts.impact_direction': ({
+                '利好', '利空', '中性', '上行', '下行', '无', '无影响'
+            }, {
+                '中': '中性', '不利': '利空', '负面影响': '利空', '负面': '利空',
+                '利好': '利好', '正面影响': '利好', '正面': '利好', '上升': '利好',
+                '中立': '中性', '平稳': '中性', '中性偏多': '中性', '中性偏空': '中性',
+                '无直接': '无', '无直接受损': '无', '无影响': '无影响',
+                '上行': '上行', '上涨': '上行', '下行': '下行', '下跌': '下行',
+            }),
+            'direct_impacts.impact_magnitude': ({
+                '高', '中', '低', '显著', '轻微', '严重'
+            }, {
+                '中': '中', '高': '高', '低': '低', '显著': '显著', '轻微': '轻微', '严重': '严重',
+            }),
+            # Top-level fields
+            'event_type': ({
+                '地缘政治', '政策', '灾难', '经济数据', '财报', '技术突破', '其他'
+            }, {
+                '地缘政治': '地缘政治', '政策': '政策', '灾难': '灾难',
+                '经济数据': '经济数据', '财报': '财报', '技术突破': '技术突破', '其他': '其他',
+                '战争': '地缘政治', '制裁': '地缘政治', '封锁': '地缘政治',
+                '监管': '政策', '法规': '政策', '财政': '政策',
+                '自然灾害': '灾难', '疫情': '灾难', '事故': '灾难',
+                'GDP': '经济数据', 'CPI': '经济数据', '利率': '经济数据', '宏观经济': '经济数据',
+                '业绩': '财报', '财报公告': '财报',
+                '创新': '技术突破', '突破': '技术突破',
+                '地缘政治/经济数据': '地缘政治', '不确定': '其他', '未知': '其他',
+            }),
+            'signal_type': ({
+                '强烈买入', '买入', '观望', '卖出', '强烈卖出'
+            }, {
+                '强烈买入': '强烈买入', '买入': '买入', '观望': '观望', '卖出': '卖出', '强烈卖出': '强烈卖出',
+                '做多': '买入', '做空': '卖出', '平仓': '观望',
+            }),
+            'event_intensity': ({
+                '高', '中', '低', '显著', '轻微', '严重'
+            }, {
+                '中': '中', '高': '高', '低': '低', '显著': '显著', '轻微': '轻微', '严重': '严重',
+            }),
+        }
+
+        def fix_value(val: str, enum_def: tuple) -> str:
+            """对单个字符串值做修复"""
+            valid_vals, alias_map = enum_def
+            if val in valid_vals:
+                return val
+            # 1. 别名精确映射
+            if val in alias_map:
+                mapped = alias_map[val]
+                if mapped in valid_vals:
+                    return mapped
+            # 2. 多值拆分
+            if '/' in val or ',' in val:
+                for part in re.split(r'[,/]', val):
+                    part = part.strip()
+                    if part in valid_vals:
+                        return part
+                    if part in alias_map:
+                        mapped = alias_map[part]
+                        if mapped in valid_vals:
+                            return mapped
+            # 3. 包含匹配
+            for ev in valid_vals:
+                if ev in val or val in ev:
+                    return ev
+            # 4. 关键字兜底（仅 impact_direction）
+            if enum_def == enum_fields.get('direct_impacts.impact_direction', (set(), {})):
+                neg_kw = ['负', '跌', '降', '减', '弱', '软', '弊', '损', '害']
+                pos_kw = ['正', '涨', '增', '强', '利', '好', '硬', '上', '买']
+                neu_kw = ['中', '稳', '平', '观', '望']
+                for kw in neg_kw:
+                    if kw in val:
+                        return '利空'
+                for kw in pos_kw:
+                    if kw in val:
+                        return '利好'
+                for kw in neu_kw:
+                    if kw in val:
+                        return '中性'
+            # 5. 无法修复返回原值（保留让 Pydantic 报错而非静默丢失）
+            return val
+
+        def fix_dict(d: dict, prefix: str = ''):
+            """递归修复 dict 中所有 enum 字段"""
+            for field, (valid_vals, alias_map) in enum_fields.items():
+                if not field.startswith(prefix):
+                    continue
+                # 去掉前缀，定位字段名
+                actual_field = field[len(prefix):] if prefix else field
+                if actual_field not in d:
+                    continue
+                val = d[actual_field]
+                if isinstance(val, list):
+                    d[actual_field] = [fix_value(v, (valid_vals, alias_map)) if isinstance(v, str) else v for v in val]
+                elif isinstance(val, str):
+                    d[actual_field] = fix_value(val, (valid_vals, alias_map))
+
+        # 直接字段
+        fix_dict(data)
+        # 嵌套字段（如 direct_impacts 列表）
+        if 'direct_impacts' in data and isinstance(data['direct_impacts'], list):
+            for item in data['direct_impacts']:
+                if isinstance(item, dict):
+                    fix_dict(item, 'direct_impacts.')
+        return data
 
     async def _call_with_retry(
         self,
@@ -380,6 +505,180 @@ class SiliconFlowClient(BaseLLMClient):
         return [str(r) if isinstance(r, Exception) else r for r in results]
 
 
+class DS2APIClient(BaseLLMClient):
+    """ds2api 本地代理 - OpenAI 兼容"""
+
+    def __init__(self):
+        super().__init__()
+        try:
+            from openai import AsyncOpenAI
+        except ImportError:
+            logger.warning("openai package not installed, DS2APIClient unavailable")
+            self.client = None
+            return
+        api_key = os.getenv("ZYAPI_API_KEY") or os.getenv("DS2API_API_KEY") or "dummy"
+        base_url = os.getenv("DS2API_BASE_URL", "http://host.docker.internal:5001")
+        self.client = AsyncOpenAI(api_key=api_key, base_url=base_url, timeout=60.0)
+        self._available = True
+
+    @property
+    def provider_name(self) -> str:
+        return "DS2API"
+
+    async def complete(
+        self,
+        prompt: str,
+        system: Optional[str] = None,
+        model: Optional[str] = None,
+        temperature: float = 0.7,
+        max_tokens: int = 2048,
+        response_model: Optional[type[BaseModel]] = None,
+    ) -> Union[str, BaseModel]:
+        if not self.client:
+            raise RuntimeError("openai package not installed")
+        messages = []
+        if system:
+            messages.append({"role": "system", "content": system})
+        messages.append({"role": "user", "content": prompt})
+        _model = model or "deepseek-v4-flash"
+
+        async def _call():
+            return await self.client.chat.completions.create(
+                model=_model,
+                messages=messages,
+                temperature=temperature,
+                max_tokens=max_tokens,
+            )
+
+        response = await self._call_with_retry(_call)
+        text = response.choices[0].message.content
+        logger.info(f"[DS2APIClient] raw (len={len(text)}): {text[:300]}")
+        self._record_success()
+        if response_model:
+            return self._parse_json_response(text, response_model)
+        return text
+    """知遥 API (zyapi.tuluo.top) - OpenAI 兼容"""
+
+    def __init__(self):
+        super().__init__()
+        try:
+            from openai import AsyncOpenAI
+        except ImportError:
+            raise ImportError("请安装 openai: pip install openai")
+
+        api_key = settings.ZYAPI_API_KEY or os.getenv("ZYAPI_API_KEY")
+        if not api_key:
+            raise ValueError("ZYAPI_API_KEY is required")
+
+        self.client = AsyncOpenAI(
+            api_key=api_key,
+            base_url=settings.ZYAPI_BASE_URL
+        )
+        self.model = settings.ZYAPI_MODEL
+
+    async def complete(
+        self,
+        prompt: str,
+        response_model: Optional[Type[BaseModel]] = None,
+        system: Optional[str] = None,
+        **kwargs
+    ) -> Any:
+        """调用知遥 API 生成回复"""
+        messages = []
+        if system:
+            messages.append({"role": "system", "content": system})
+        messages.append({"role": "user", "content": prompt})
+
+        async def _call():
+            return await self.client.chat.completions.create(
+                model=self.model,
+                messages=messages,
+                **kwargs
+            )
+
+        response = await self._call_with_retry(_call)
+        text = response.choices[0].message.content
+        logger.info(f"[ZyAPIClient] raw (len={len(text)}): {text[:300]}")
+        self._record_success()
+
+        if response_model:
+            try:
+                return self._parse_json_response(text, response_model)
+            except Exception as e:
+                logger.error(f"[ZyAPIClient] parse error: {e}, text={text[:300]}")
+                raise
+        return text
+
+    async def batch_complete(
+        self,
+        prompts: list[str],
+        **kwargs
+    ) -> list[str]:
+        """批量调用知遥 API（并发执行）"""
+        tasks = [self.complete(prompt, **kwargs) for prompt in prompts]
+        results = await asyncio.gather(*tasks, return_exceptions=True)
+        return [str(r) if isinstance(r, Exception) else r for r in results]
+
+
+class NVIDIAAPIClient(BaseLLMClient):
+    """NVIDIA NIM 免费模型 - 直连 https://integrate.api.nvidia.com"""
+
+    def __init__(self):
+        super().__init__()
+        from openai import AsyncOpenAI
+        self.model = getattr(settings, 'NVIDIA_MODEL', 'nvidia/llama-3.1-nemotron-70b-instruct')
+        self.client = AsyncOpenAI(
+            base_url="https://integrate.api.nvidia.com/v1",
+            api_key=settings.NVIDIA_API_KEY,
+            timeout=60.0,
+            max_retries=2,
+        )
+
+    @property
+    def is_available(self) -> bool:
+        return bool(settings.NVIDIA_API_KEY)
+
+    async def complete(
+        self,
+        prompt: str,
+        system_prompt: str | None = None,
+        response_model: Type[BaseModel] | None = None,
+        **kwargs
+    ) -> str | BaseModel:
+        messages = []
+        if system_prompt:
+            messages.append({"role": "system", "content": system_prompt})
+        messages.append({"role": "user", "content": prompt})
+
+        async def _call():
+            return await self.client.chat.completions.create(
+                model=self.model,
+                messages=messages,
+                **kwargs
+            )
+
+        response = await self._call_with_retry(_call)
+        text = response.choices[0].message.content
+        logger.info(f"[NVIDIA] raw (len={len(text)}): {text[:200]}")
+        self._record_success()
+
+        if response_model:
+            try:
+                return self._parse_json_response(text, response_model)
+            except Exception as e:
+                logger.error(f"[NVIDIA] parse error: {e}, text={text[:200]}")
+                raise
+        return text
+
+    async def batch_complete(
+        self,
+        prompts: list[str],
+        **kwargs
+    ) -> list[str]:
+        """批量补全（顺序执行）"""
+        return [await self.complete(prompt, **kwargs) for prompt in prompts]
+
+
 class RuleBasedFallbackClient(BaseLLMClient):
     """基于规则的降级客户端（LLM不可用时使用）"""
 
@@ -460,6 +759,8 @@ def get_llm_client() -> BaseLLMClient:
         "openai": OpenAIClient,
         "ollama": OllamaClient,
         "siliconflow": SiliconFlowClient,
+        "ds2api": DS2APIClient,
+        "nvidia": NVIDIAAPIClient,
     }
 
     if provider in clients:
