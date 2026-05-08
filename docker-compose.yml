@@ -12,9 +12,19 @@ services:
       - LLM_PROVIDER=${LLM_PROVIDER:-siliconflow}
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
       - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - OPENAI_BASE_URL=${OPENAI_BASE_URL:-https://api.openai.com/v1}
+      - OPENAI_MODEL=${OPENAI_MODEL:-gpt-4o}
       - SILICONFLOW_API_KEY=${SILICONFLOW_API_KEY}
       - SILICONFLOW_BASE_URL=${SILICONFLOW_BASE_URL:-https://api.siliconflow.cn/v1}
       - SILICONFLOW_MODEL=${SILICONFLOW_MODEL:-deepseek-ai/DeepSeek-V3}
+      - OLLAMA_BASE_URL=${OLLAMA_BASE_URL:-http://localhost:11434}
+      - OLLAMA_MODEL=${OLLAMA_MODEL:-llama3}
+      - DATABASE_URL=${DATABASE_URL:-sqlite:///./data/events.db}
+      - REDIS_URL=${REDIS_URL}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-http://localhost:3000}
+      - API_AUTH_ENABLED=${API_AUTH_ENABLED:-false}
+      - API_KEY=${API_KEY}
     volumes:
       - ./data:/app/data
     restart: unless-stopped
@@ -23,12 +33,16 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
+    networks:
+      - app-network
 
   # 前端
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+    environment:
+      - NEXT_PUBLIC_API_URL=${API_URL:-http://localhost:8080}
     deploy:
       resources:
         limits:
@@ -36,6 +50,8 @@ services:
         reservations:
           memory: 128M
     restart: unless-stopped
+    networks:
+      - app-network
 
   # Nginx 反向代理（生产环境）
   nginx:
@@ -54,3 +70,9 @@ services:
         reservations:
           memory: 64M
     restart: unless-stopped
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge

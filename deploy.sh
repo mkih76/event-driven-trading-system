@@ -77,9 +77,23 @@ if [ ! -f "$ENV_FILE" ]; then
     warn "请编辑 $ENV_FILE 填入你的 API Key"
     warn "推荐使用 SiliconFlow（国内可直接访问）: https://cloud.siliconflow.cn"
     echo ""
+
+    # SiliconFlow（推荐）
     read -p "请输入 SiliconFlow API Key（跳过请直接回车）: " API_KEY
     if [ -n "$API_KEY" ]; then
         sed -i "s/your_siliconflow_api_key/$API_KEY/" "$ENV_FILE"
+    fi
+
+    # CORS 配置
+    read -p "是否修改 CORS 配置？（生产环境需设为你的域名，y/N）: " UPDATE_CORS
+    if [ "$UPDATE_CORS" = "y" ] || [ "$UPDATE_CORS" = "Y" ]; then
+        read -p "请输入允许的域名（多个用逗号分隔）: " CORS_ORIGINS
+        if [ -n "$CORS_ORIGINS" ]; then
+            sed -i "s/ALLOWED_ORIGINS=.*/ALLOWED_ORIGINS=$CORS_ORIGINS/" "$ENV_FILE"
+        fi
+    fi
+
+    if [ -n "$API_KEY" ]; then
         info "API Key 已配置"
     else
         warn "未配置 API Key，LLM 调用将使用降级模式"
