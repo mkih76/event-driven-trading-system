@@ -137,6 +137,10 @@ class BaseLLMClient(ABC):
             except asyncio.TimeoutError:
                 last_error = LLMError(f"调用超时 ({self.timeout}s)", self.__class__.__name__, is_retryable=True)
                 logger.warning(f"LLM 调用超时，重试 {attempt + 1}/{self.max_retries}")
+            except (ConnectionError, OSError) as e:
+                # 网络错误，可重试
+                last_error = LLMError(f"网络错误: {e}", self.__class__.__name__, is_retryable=True)
+                logger.warning(f"LLM 网络错误: {e}，重试 {attempt + 1}/{self.max_retries}")
             except Exception as e:
                 error_msg = str(e)
                 # 判断是否可重试
@@ -195,12 +199,10 @@ class ClaudeClient(BaseLLMClient):
         prompts: list[str],
         **kwargs
     ) -> list[str]:
-        """批量调用 Claude"""
-        results = []
-        for prompt in prompts:
-            result = await self.complete(prompt, **kwargs)
-            results.append(result)
-        return results
+        """批量调用 Claude（并发执行）"""
+        tasks = [self.complete(prompt, **kwargs) for prompt in prompts]
+        results = await asyncio.gather(*tasks, return_exceptions=True)
+        return [str(r) if isinstance(r, Exception) else r for r in results]
 
 
 class OpenAIClient(BaseLLMClient):
@@ -256,12 +258,10 @@ class OpenAIClient(BaseLLMClient):
         prompts: list[str],
         **kwargs
     ) -> list[str]:
-        """批量调用 OpenAI"""
-        results = []
-        for prompt in prompts:
-            result = await self.complete(prompt, **kwargs)
-            results.append(result)
-        return results
+        """批量调用 OpenAI（并发执行）"""
+        tasks = [self.complete(prompt, **kwargs) for prompt in prompts]
+        results = await asyncio.gather(*tasks, return_exceptions=True)
+        return [str(r) if isinstance(r, Exception) else r for r in results]
 
 
 class OllamaClient(BaseLLMClient):
@@ -313,12 +313,10 @@ class OllamaClient(BaseLLMClient):
         prompts: list[str],
         **kwargs
     ) -> list[str]:
-        """批量调用 Ollama"""
-        results = []
-        for prompt in prompts:
-            result = await self.complete(prompt, **kwargs)
-            results.append(result)
-        return results
+        """批量调用 Ollama（并发执行）"""
+        tasks = [self.complete(prompt, **kwargs) for prompt in prompts]
+        results = await asyncio.gather(*tasks, return_exceptions=True)
+        return [str(r) if isinstance(r, Exception) else r for r in results]
 
 
 class SiliconFlowClient(BaseLLMClient):
@@ -376,12 +374,10 @@ class SiliconFlowClient(BaseLLMClient):
         prompts: list[str],
         **kwargs
     ) -> list[str]:
-        """批量调用 SiliconFlow"""
-        results = []
-        for prompt in prompts:
-            result = await self.complete(prompt, **kwargs)
-            results.append(result)
-        return results
+        """批量调用 SiliconFlow（并发执行）"""
+        tasks = [self.complete(prompt, **kwargs) for prompt in prompts]
+        results = await asyncio.gather(*tasks, return_exceptions=True)
+        return [str(r) if isinstance(r, Exception) else r for r in results]
 
 
 class RuleBasedFallbackClient(BaseLLMClient):

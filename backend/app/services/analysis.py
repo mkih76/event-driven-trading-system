@@ -4,6 +4,7 @@
 import time
 import hashlib
 import json
+import logging
 from typing import Optional, Tuple
 from datetime import datetime
 from pydantic import BaseModel
@@ -28,6 +29,8 @@ from ..schemas.models import (
     InvestmentSignal,
 )
 from ..config import settings
+
+logger = logging.getLogger(__name__)
 from .causal_reasoning import get_industry_graph, get_dynamic_learner
 from .impact_quant import get_backtest_engine, get_signal_store
 
@@ -71,7 +74,8 @@ async def verify_api_key(x_api_key: Optional[str] = Header(None)) -> str:
             detail="需要 API Key。请在请求头中添加 X-API-Key"
         )
 
-    if x_api_key != settings.API_KEY:
+    import secrets
+    if not secrets.compare_digest(x_api_key, settings.API_KEY):
         raise HTTPException(
             status_code=403,
             detail="API Key 无效"
@@ -88,10 +92,14 @@ class SignalList(BaseModel):
 class EventAnalysisService:
     """事件分析服务"""
 
+    # 缓存配置
+    _CACHE_MAX_SIZE = 1000
+    _CACHE_TTL_HOURS = 24
+
     def __init__(self):
         self.llm = get_llm()
-        # 简单内存缓存
-        self._cache = {}
+        # 带过期时间的缓存: {key: (timestamp, data)}
+        self._cache: dict = {}
         self._degradation = AnalysisDegradation()
 
     @property
@@ -104,15 +112,34 @@ class EventAnalysisService:
         text = f"{title}|{content}"
         return hashlib.md5(text.encode()).hexdigest()
 
+    def _cleanup_cache(self):
+        """清理过期缓存和超限缓存"""
+        now = datetime.now()
+        # 删除过期缓存
+        self._cache = {
+            k: v for k, v in self._cache.items()
+            if (now - v[0]).total_seconds() < self._CACHE_TTL_HOURS * 3600
+        }
+        # 如果仍然超限，删除最老的
+        if len(self._cache) >= self._CACHE_MAX_SIZE:
+            sorted_keys = sorted(self._cache.keys(), key=lambda k: self._cache[k][0])
+            for key in sorted_keys[:10]:
+                del self._cache[key]
+
     def _load_from_cache(self, cache_key: str) -> Optional[FullAnalysisResult]:
         """从缓存加载"""
         if cache_key in self._cache:
-            return FullAnalysisResult(**self._cache[cache_key])
+            return FullAnalysisResult(**self._cache[cache_key][1])
         return None
 
     def _save_to_cache(self, cache_key: str, result: FullAnalysisResult):
         """保存到缓存"""
-        self._cache[cache_key] = result.model_dump(mode='json')
+        self._cleanup_cache()
+        self._cache[cache_key] = (datetime.now(), result.model_dump(mode='json'))
+
+    # 输入验证常量
+    MAX_TITLE_LENGTH = 500
+    MAX_CONTENT_LENGTH = 10000
 
     async def analyze(
         self,
@@ -131,6 +158,12 @@ class EventAnalysisService:
 
         返回: (result, degradation_info)
         """
+        # 输入验证
+        if len(title) > self.MAX_TITLE_LENGTH:
+            raise ValueError(f"标题长度不能超过 {self.MAX_TITLE_LENGTH} 字符")
+        if len(content) > self.MAX_CONTENT_LENGTH:
+            content = content[:self.MAX_CONTENT_LENGTH]
+
         start_time = time.time()
         cache_key = self._get_cache_key(title, content)
 
@@ -140,7 +173,7 @@ class EventAnalysisService:
             if cached:
                 return cached, self._degradation
 
-        print(f"[分析开始] {title[:50]}...")
+        logger.info(f"[分析开始] {title[:50]}...")
 
         # 检查 LLM 可用性
         llm = get_llm()
@@ -150,21 +183,21 @@ class EventAnalysisService:
                 reason="LLM服务不可用",
                 fallback_used="RuleBasedFallback"
             )
-            print("[警告] LLM不可用，使用规则降级模式")
+            logger.warning("[警告] LLM不可用，使用规则降级模式")
         else:
             self._degradation = AnalysisDegradation()
 
         # Step 1: 事件理解
         event_analysis = await self._analyze_event(title, content)
-        print(f"[Step 1 完成] 事件类型: {event_analysis.event_type}")
+        logger.info(f"[Step 1 完成] 事件类型: {event_analysis.event_type}")
 
         # Step 2: 产业链传导
         transmission = await self._analyze_transmission(event_analysis)
-        print(f"[Step 2 完成] 传导链长度: {len(transmission.transmission_chain)}")
+        logger.info(f"[Step 2 完成] 传导链长度: {len(transmission.transmission_chain)}")
 
         # Step 3: 信号生成
         signals = await self._generate_signals(event_analysis, transmission)
-        print(f"[Step 3 完成] 生成信号数: {len(signals)}")
+        logger.info(f"[Step 3 完成] 生成信号数: {len(signals)}")
 
         # Step 3.5: 历史回测 + 置信度调整
         backtest_eval = {}
@@ -188,9 +221,9 @@ class EventAnalysisService:
                         for s in signals if hasattr(s, 'backtest_reference')
                     ) / min(len(signals), 3) if signals else 0
                 }
-                print(f"[Step 3.5 完成] 回测参考: {backtest_eval.get('has_reference')}, 置信度调整: {backtest_eval.get('avg_confidence_adjustment', 0):+.1f}")
+                logger.info(f"[Step 3.5 完成] 回测参考: {backtest_eval.get('has_reference')}, 置信度调整: {backtest_eval.get('avg_confidence_adjustment', 0):+.1f}")
         except Exception as e:
-            print(f"[回测警告] 历史回测评估失败: {e}")
+            logger.warning(f"[回测警告] 历史回测评估失败: {e}")
 
         # 整合结果
         processing_time = int((time.time() - start_time) * 1000)
@@ -241,7 +274,7 @@ class EventAnalysisService:
                 transmission_chain=transmission_chain_data,
                 sentiment=event_analysis.sentiment
             )
-            print(f"[动态学习] 关系数: {dynamic_learner.get_statistics()['total_relationships_learned']}, 模式数: {dynamic_learner.get_statistics()['total_patterns_learned']}")
+            logger.info(f"[动态学习] 关系数: {dynamic_learner.get_statistics()['total_relationships_learned']}, 模式数: {dynamic_learner.get_statistics()['total_patterns_learned']}")
 
             # 同时学习事件历史
             from .impact_quant import get_backtest_engine
@@ -256,9 +289,9 @@ class EventAnalysisService:
                 signals=[{"industry": sig.industry, "signal": sig.signal, "confidence": sig.confidence} for sig in signals]
             )
         except Exception as e:
-            print(f"[动态学习] 学习失败: {e}")
+            logger.warning(f"[动态学习] 学习失败: {e}")
 
-        print(f"[分析完成] 耗时: {processing_time}ms")
+        logger.info(f"[分析完成] 耗时: {processing_time}ms")
 
         return result, self._degradation
 
@@ -305,9 +338,9 @@ class EventAnalysisService:
             if matched_nodes:
                 # 获取传导路径骨架
                 kg_constraints = kg.get_graph_constraints(matched_nodes, depth=3, max_paths=8)
-                print(f"[知识图谱] 匹配节点: {matched_nodes}, 生成 {len(kg_constraints)} 字符约束")
+                logger.info(f"[知识图谱] 匹配节点: {matched_nodes}, 生成 {len(kg_constraints)} 字符约束")
         except Exception as e:
-            print(f"[知识图谱] 获取约束失败: {e}")
+            logger.warning(f"[知识图谱] 获取约束失败: {e}")
 
         prompt = format_chain_transmission_prompt(
             event_summary=event_analysis.summary,
@@ -391,7 +424,7 @@ class EventAnalysisService:
             if cached:
                 return cached, self._degradation
 
-        print(f"[RAG分析开始] {title[:50]}...")
+        logger.info(f"[RAG分析开始] {title[:50]}...")
 
         # 检查 LLM 可用性
         llm = get_llm()
@@ -415,9 +448,9 @@ class EventAnalysisService:
                     content=content,
                     event_type="其他"  # 先用默认，等事件分析后可以更新
                 )
-                print(f"[RAG获取] 实时上下文长度: {len(real_time_context)}")
+                logger.debug(f"[RAG获取] 实时上下文长度: {len(real_time_context)}")
             except Exception as e:
-                print(f"[RAG警告] 获取实时数据失败: {e}")
+                logger.warning(f"[RAG警告] 获取实时数据失败: {e}")
 
         # Step 1: 事件理解 (RAG 增强)
         if real_time_context:
@@ -425,7 +458,7 @@ class EventAnalysisService:
         else:
             event_analysis = await self._analyze_event(title, content)
 
-        print(f"[Step 1 完成] 事件类型: {event_analysis.event_type}")
+        logger.info(f"[Step 1 完成] 事件类型: {event_analysis.event_type}")
 
         # 更新RAG上下文（根据事件类型重新获取更相关的上下文）
         if include_real_time and not real_time_context:
@@ -441,11 +474,11 @@ class EventAnalysisService:
 
         # Step 2: 产业链传导
         transmission = await self._analyze_transmission(event_analysis)
-        print(f"[Step 2 完成] 传导链长度: {len(transmission.transmission_chain)}")
+        logger.info(f"[Step 2 完成] 传导链长度: {len(transmission.transmission_chain)}")
 
         # Step 3: 信号生成
         signals = await self._generate_signals(event_analysis, transmission)
-        print(f"[Step 3 完成] 生成信号数: {len(signals)}")
+        logger.info(f"[Step 3 完成] 生成信号数: {len(signals)}")
 
         # Step 3.5: 历史回测 + 置信度调整
         try:
@@ -461,9 +494,9 @@ class EventAnalysisService:
                     )
                     signal.confidence = eval_result.get("adjusted_confidence", signal.confidence)
                     signal.backtest_reference = eval_result
-                print(f"[Step 3.5 完成] 回测置信度调整已应用")
+                logger.info(f"[Step 3.5 完成] 回测置信度调整已应用")
         except Exception as e:
-            print(f"[回测警告] 历史回测评估失败: {e}")
+            logger.warning(f"[回测警告] 历史回测评估失败: {e}")
 
         # 整合结果
         processing_time = int((time.time() - start_time) * 1000)
@@ -513,7 +546,7 @@ class EventAnalysisService:
                 transmission_chain=transmission_chain_data,
                 sentiment=event_analysis.sentiment
             )
-            print(f"[动态学习] 关系数: {dynamic_learner.get_statistics()['total_relationships_learned']}, 模式数: {dynamic_learner.get_statistics()['total_patterns_learned']}")
+            logger.info(f"[动态学习] 关系数: {dynamic_learner.get_statistics()['total_relationships_learned']}, 模式数: {dynamic_learner.get_statistics()['total_patterns_learned']}")
 
             # 同时学习事件历史
             from .impact_quant import get_backtest_engine
@@ -528,9 +561,9 @@ class EventAnalysisService:
                 signals=[{"industry": sig.industry, "signal": sig.signal, "confidence": sig.confidence} for sig in signals]
             )
         except Exception as e:
-            print(f"[动态学习] 学习失败: {e}")
+            logger.warning(f"[动态学习] 学习失败: {e}")
 
-        print(f"[分析完成] 耗时: {processing_time}ms, RAG启用: {bool(real_time_context)}")
+        logger.info(f"[分析完成] 耗时: {processing_time}ms, RAG启用: {bool(real_time_context)}")
 
         return result, self._degradation
 
@@ -553,11 +586,14 @@ class EventAnalysisService:
 
 # 全局服务实例
 _analysis_service: Optional[EventAnalysisService] = None
+_analysis_lock = __import__("threading").Lock()
 
 
 def get_analysis_service() -> EventAnalysisService:
-    """获取分析服务实例"""
+    """获取分析服务实例（线程安全单例）"""
     global _analysis_service
     if _analysis_service is None:
-        _analysis_service = EventAnalysisService()
+        with _analysis_lock:
+            if _analysis_service is None:  # Double-check
+                _analysis_service = EventAnalysisService()
     return _analysis_service

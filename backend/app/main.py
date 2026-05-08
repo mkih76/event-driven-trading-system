@@ -28,7 +28,7 @@ app = FastAPI(
 # CORS 配置
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # 生产环境应该限制具体域名
+    allow_origins=settings.get_allowed_origins(),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -149,8 +149,6 @@ async def analyze_event_stream(
 
     return StreamingResponse(
         event_generator(),
-        media_type="text/event-stream"
-    )
         media_type="text/event-stream"
     )
 

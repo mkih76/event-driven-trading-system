@@ -4,9 +4,12 @@ Redis 缓存模块
 """
 import json
 import hashlib
+import logging
 from datetime import timedelta
 from typing import Optional, Any, List, Dict
 from pathlib import Path
+
+logger = logging.getLogger(__name__)
 
 # Redis 客户端（可选依赖）
 try:
@@ -30,15 +33,15 @@ class CacheClient:
                 self._client = redis.from_url(redis_url)
                 self._client.ping()
                 self._use_redis = True
-                print("[缓存] 使用 Redis 缓存")
+                logger.info("[缓存] 使用 Redis 缓存")
             except Exception as e:
-                print(f"[缓存] Redis 连接失败，使用本地缓存: {e}")
+                logger.warning(f"[缓存] Redis 连接失败，使用本地缓存: {e}")
                 self._client = None
 
         if not self._use_redis:
             self._cache_dir = Path(__file__).parent.parent.parent.parent / "cache"
             self._cache_dir.mkdir(exist_ok=True)
-            print("[缓存] 使用本地文件缓存")
+            logger.info("[缓存] 使用本地文件缓存")
 
     def _get_cache_key(self, key: str) -> str:
         """生成缓存键"""
@@ -59,7 +62,7 @@ class CacheClient:
                 if data:
                     return json.loads(data)
             except Exception as e:
-                print(f"[缓存] Redis 获取失败: {e}")
+                logger.warning(f"[缓存] Redis 获取失败: {e}")
 
         # 本地缓存
         cache_path = self._local_cache_path(key)
@@ -92,7 +95,7 @@ class CacheClient:
                 )
                 return
             except Exception as e:
-                print(f"[缓存] Redis 设置失败: {e}")
+                logger.warning(f"[缓存] Redis 设置失败: {e}")
 
         # 本地缓存
         cache_path = self._local_cache_path(key)
@@ -105,7 +108,7 @@ class CacheClient:
                     "created_at": datetime.now().isoformat()
                 }, f, ensure_ascii=False, indent=2)
         except Exception as e:
-            print(f"[缓存] 本地缓存写入失败: {e}")
+            logger.warning(f"[缓存] 本地缓存写入失败: {e}")
 
     def delete(self, key: str):
         """删除缓存"""
@@ -152,12 +155,12 @@ class SignalStore:
                 self._client = redis.from_url(redis_url)
                 self._client.ping()
                 self._use_redis = True
-                print("[信号库] 使用 Redis 存储")
+                logger.info("[信号库] 使用 Redis 存储")
             except Exception:
                 self._client = None
 
         if not self._use_redis:
-            print("[信号库] 使用本地文件存储")
+            logger.info("[信号库] 使用本地文件存储")
 
     def save_signal(self, signal: Dict[str, Any]) -> str:
         """保存信号"""
@@ -174,7 +177,7 @@ class SignalStore:
                 self._client.ltrim("signals", 0, 999)  # 保留最近1000条
                 return signal_id
             except Exception as e:
-                print(f"[信号库] Redis 保存失败: {e}")
+                logger.warning(f"[信号库] Redis 保存失败: {e}")
 
         # 本地存储
         signal_file = self._store_dir / f"{signal_id}.json"

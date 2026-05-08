@@ -123,7 +123,7 @@ class MetricsCollector:
             with open(METRICS_FILE, "w", encoding="utf-8") as f:
                 json.dump(data, f, ensure_ascii=False, indent=2)
         except Exception as e:
-            print(f"Failed to save metrics: {e}")
+            logger.warning(f"Failed to save metrics: {e}")
 
 
 # 全局实例

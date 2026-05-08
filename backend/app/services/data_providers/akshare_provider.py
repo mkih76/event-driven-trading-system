@@ -99,7 +99,7 @@ class AKShareProvider(BaseDataProvider):
                         keywords=keywords
                     ))
             except Exception as e:
-                print(f"获取东方财富新闻失败: {e}")
+                logger.warning(f"获取东方财富新闻失败: {e}")
 
             # 过滤与关键词相关的新闻
             if keywords:
@@ -114,7 +114,7 @@ class AKShareProvider(BaseDataProvider):
             return news_items
 
         except Exception as e:
-            print(f"获取新闻失败: {e}")
+            logger.warning(f"获取新闻失败: {e}")
             return []
 
     def _parse_datetime(self, value) -> datetime:
@@ -170,13 +170,13 @@ class AKShareProvider(BaseDataProvider):
                             sector=r.get('所属行业')
                         ))
                 except Exception as e:
-                    print(f"获取 {symbol} 行情失败: {e}")
+                    logger.warning(f"获取 {symbol} 行情失败: {e}")
 
             self._set_cache(self._market_cache, cache_key, market_data)
             return market_data
 
         except Exception as e:
-            print(f"批量获取行情失败: {e}")
+            logger.warning(f"批量获取行情失败: {e}")
             return []
 
     @ak_retry
@@ -227,7 +227,7 @@ class AKShareProvider(BaseDataProvider):
             return None
 
         except Exception as e:
-            print(f"获取板块数据失败: {e}")
+            logger.warning(f"获取板块数据失败: {e}")
             return None
 
     async def search_stocks(
@@ -253,7 +253,7 @@ class AKShareProvider(BaseDataProvider):
                 for _, r in results.iterrows()
             ]
         except Exception as e:
-            print(f"搜索股票失败: {e}")
+            logger.warning(f"搜索股票失败: {e}")
             return []
 
     @ak_retry
@@ -276,5 +276,5 @@ class AKShareProvider(BaseDataProvider):
             return sectors
 
         except Exception as e:
-            print(f"获取热门板块失败: {e}")
+            logger.warning(f"获取热门板块失败: {e}")
             return []

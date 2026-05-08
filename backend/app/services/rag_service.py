@@ -3,10 +3,13 @@ RAG 检索增强服务
 结合实时数据与 LLM 分析
 按事件类型选择性注入上下文
 """
+import logging
 from typing import List, Optional, Dict, Any
 from .data_providers import get_news_provider, get_market_provider
 from .data_providers.base import NewsItem, MarketData, SectorData
 from .data_providers.config import data_provider_settings
+
+logger = logging.getLogger(__name__)
 
 
 # 事件类型 -> 上下文需求映射
@@ -62,14 +65,14 @@ class RAGService:
             try:
                 self.news_provider = get_news_provider()
             except Exception as e:
-                print(f"新闻提供者初始化失败: {e}")
+                logger.warning(f"新闻提供者初始化失败: {e}")
                 self.news_provider = None
 
         if self.market_provider is None:
             try:
                 self.market_provider = get_market_provider()
             except Exception as e:
-                print(f"行情提供者初始化失败: {e}")
+                logger.warning(f"行情提供者初始化失败: {e}")
                 self.market_provider = None
 
         return self.news_provider, self.market_provider
