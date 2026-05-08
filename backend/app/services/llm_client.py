@@ -13,6 +13,18 @@ import anthropic
 T = TypeVar('T', bound=BaseModel)
 
 
+class LLMError(Exception):
+    def __init__(self, message, provider="", is_retryable=True):
+        super().__init__(message)
+        self.provider = provider
+        self.is_retryable = is_retryable
+
+
+class LLMUnavailableError(LLMError):
+    def __init__(self, provider, reason=""):
+        super().__init__(f"{provider} unavailable: {reason}", provider, is_retryable=False)
+
+
 class BaseLLMClient(ABC):
     """LLM 客户端基类"""
 
@@ -382,3 +394,52 @@ def fix_enum_values(data):
             if isinstance(item, dict):
                 fix_enum_values(item)
     return data
+
+
+class RuleBasedFallbackClient(BaseLLMClient):
+    """基于规则的降级客户端（LLM不可用时使用）"""
+
+    def __init__(self):
+        self._available = True
+
+    @property
+    def is_available(self) -> bool:
+        return True
+
+    async def complete(
+        self,
+        prompt: str,
+        response_model: Optional[Type[BaseModel]] = None,
+        system: Optional[str] = None,
+        **kwargs
+    ) -> Any:
+        """基于关键词规则的降级分析"""
+        text = prompt.lower()
+        sentiment = 0.0
+        if any(k in text for k in ["利好", "增加", "上涨", "增长"]):
+            sentiment = 0.5
+        if any(k in text for k in ["利空", "减少", "下跌", "制裁"]):
+            sentiment = -0.5
+        return {"sentiment": sentiment, "event_type": "其他", "summary": "规则降级分析"}
+
+    async def batch_complete(self, prompts: list[str], **kwargs) -> list[str]:
+        return [await self.complete(p, **kwargs) for p in prompts]
+
+
+def get_llm() -> BaseLLMClient:
+    """获取 LLM 客户端"""
+    provider = settings.LLM_PROVIDER.lower()
+    clients = {
+        "claude": ClaudeClient,
+        "openai": OpenAIClient,
+        "ollama": OllamaClient,
+        "siliconflow": SiliconFlowClient,
+    }
+    if provider == "gemini":
+        return RuleBasedFallbackClient()
+    elif provider in clients:
+        try:
+            return clients[provider]()
+        except (ValueError, ImportError):
+            return RuleBasedFallbackClient()
+    return RuleBasedFallbackClient()
