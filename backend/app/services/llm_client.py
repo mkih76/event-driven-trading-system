@@ -28,6 +28,11 @@ class LLMUnavailableError(LLMError):
 class BaseLLMClient(ABC):
     """LLM 客户端基类"""
 
+    def __init__(self):
+        self.timeout = 120
+        self.max_retries = 3
+        self._available = True
+
     @abstractmethod
     async def complete(
         self,
@@ -123,6 +128,7 @@ class OpenAIClient(BaseLLMClient):
     """OpenAI 客户端"""
 
     def __init__(self):
+        super().__init__()
         try:
             from openai import AsyncOpenAI
         except ImportError:
@@ -269,6 +275,7 @@ class SiliconFlowClient(BaseLLMClient):
     """SiliconFlow (硅基流动) 客户端 - OpenAI 兼容"""
 
     def __init__(self):
+        super().__init__()
         try:
             from openai import AsyncOpenAI
         except ImportError:
@@ -379,6 +386,7 @@ ENUM_MAPPING = {
     "资本流出": "资金流动",
     "避险资金": "避险需求",
     "避险": "避险需求",
+    "金融属性": "风险偏好",
 }
 
 def fix_enum_values(data):

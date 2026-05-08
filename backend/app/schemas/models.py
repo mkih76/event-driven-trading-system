@@ -102,6 +102,7 @@ class TransmissionChainResult(BaseModel):
 
 class StockSignal(BaseModel):
     """个股交易信号"""
+    industry: str = Field(default="", description="所属行业")
     stock_code: str = Field(..., description="股票代码")
     stock_name: str = Field(..., description="股票名称")
     signal_type: SignalType

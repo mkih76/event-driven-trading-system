@@ -286,7 +286,7 @@ class EventAnalysisService:
                 sentiment=event_analysis.sentiment,
                 direct_impacts=direct_impacts_data,
                 transmission_chain=transmission_chain_data,
-                signals=[{"industry": sig.industry, "signal": sig.signal, "confidence": sig.confidence} for sig in signals]
+                signals=[{"industry": sig.industry, "signal": sig.signal_type.value, "confidence": sig.confidence} for sig in signals]
             )
         except Exception as e:
             logger.warning(f"[动态学习] 学习失败: {e}")
@@ -371,7 +371,7 @@ class EventAnalysisService:
         ])
 
         signals_str = "\n".join([
-            f"- {sig.industry}: {sig.signal} (置信度{sig.confidence}%)"
+            f"- {sig.industry}: {sig.signal_type.value} (置信度{sig.confidence}%)"
             for sig in transmission.investment_signals
         ])
 
@@ -558,7 +558,7 @@ class EventAnalysisService:
                 sentiment=event_analysis.sentiment,
                 direct_impacts=direct_impacts_data,
                 transmission_chain=transmission_chain_data,
-                signals=[{"industry": sig.industry, "signal": sig.signal, "confidence": sig.confidence} for sig in signals]
+                signals=[{"industry": sig.industry, "signal": sig.signal_type.value, "confidence": sig.confidence} for sig in signals]
             )
         except Exception as e:
             logger.warning(f"[动态学习] 学习失败: {e}")
