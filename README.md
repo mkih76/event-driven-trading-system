@@ -1,4 +1,4 @@
-# 🧠 Event Trading Intelligence System
+# Event Trading Intelligence System
 
 <div align="center">
 
@@ -14,16 +14,33 @@
 
 </div>
 
-> 🧠 基于大语言模型的事件驱动交易分析系统 | 自动推理产业链传导路径 | 生成可执行投资信号
+> 基于大语言模型的事件驱动交易分析系统 | 自动推理产业链传导路径 | 生成可执行投资信号
 
 ---
 
-## 🎯 系统架构
+## Table of Contents
+
+1. [System Architecture](#1-system-architecture)
+2. [Analysis Pipeline](#2-analysis-pipeline)
+3. [Transmission Reasoning Example](#3-transmission-reasoning-example)
+4. [Project Philosophy](#4-project-philosophy)
+5. [Core Capabilities](#5-core-capabilities)
+6. [Technical Highlights](#6-technical-highlights)
+7. [System Demonstration](#7-system-demonstration)
+8. [Tech Stack](#8-tech-stack)
+9. [Project Structure](#9-project-structure)
+10. [API Reference](#10-api-reference)
+11. [Deployment Guide](#11-deployment-guide)
+12. [License](#12-license)
+
+---
+
+## 1. System Architecture
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────────────────────┐
-│                                    USER INPUT                                                │
-│                                  "US-IRAN Military Conflict"                                  │
+│                                        USER INPUT                                            │
+│                              "US-IRAN Military Conflict"                                     │
 └─────────────────────────────────────────────────────────────────────────────────────────────┘
                                               │
                     ┌─────────────────────────┼─────────────────────────┐
@@ -40,19 +57,19 @@
         │           │                 │      │          │            │ │      │
         ▼           ▼                 ▼      ▼          ▼            ▼ ▼      ▼
 ┌─────────────────────────────────────────────────────────────────────────────────────────────┐
-│                                        ⚡ FastAPI Gateway                                     │
-│                                /api/v1/analyze  │  /api/v1/analyze/stream                   │
+│                                       FastAPI Gateway                                         │
+│                           /api/v1/analyze  |  /api/v1/analyze/stream                         │
 └─────────────────────────────────────────────────────────────────────────────────────────────┘
                                               │
                     ┌─────────────────────────┼─────────────────────────┐
                     │                         │                         │
                     ▼                         ▼                         ▼
         ┌───────────────────┐     ┌───────────────────────┐     ┌───────────────────┐
-        │    STEP 1         │     │    STEP 2             │     │    STEP 3         │
+        │      STEP 1       │     │       STEP 2          │     │      STEP 3       │
         │  ┌─────────────┐  │     │  ┌─────────────────┐  │     │  ┌─────────────┐  │
         │  │ Event       │  │     │  │ Transmission    │  │     │  │ Signal      │  │
-        │  │ Understanding│ │────►│  │ Analysis       │  │────►│  │ Generation  │  │
-        │  │    (LLM)    │  │     │  │ (LLM + Graph)  │  │     │  │    (LLM)    │  │
+        │  │ Understanding│ │───► │  │ Analysis       │  │───► │  │ Generation  │  │
+        │  │   (LLM)    │  │     │  │ (LLM + Graph)  │  │     │  │   (LLM)    │  │
         │  └─────────────┘  │     │  └────────┬────────┘  │     │  └─────────────┘  │
         └───────────────────┘     └───────────┼───────────┘     └───────────────────┘
                                               │
@@ -60,10 +77,9 @@
                     │                         │                         │
                     ▼                         ▼                         ▼
            ┌────────────────┐      ┌────────────────────┐       ┌────────────────┐
-           │   Knowledge    │      │   Dynamic          │       │   Backtest    │
-           │   Graph        │      │   Learning         │       │   Engine       │
-           │   Industry     │      │   Feedback Loop    │       │   Confidence   │
-           │   Relations    │      │   (learner)        │       │   Calibration   │
+           │    Knowledge   │      │      Dynamic        │       │    Backtest   │
+           │      Graph     │      │      Learning       │       │     Engine    │
+           │  Industry Rel.  │      │    Feedback Loop   │       │  Confidence   │
            └────────┬───────┘      └─────────┬──────────┘       └────────┬───────┘
                     │                         │                         │
                     └─────────────────────────┼─────────────────────────┘
@@ -71,8 +87,7 @@
                                               ▼
                                  ┌────────────────────────┐
                                  │      RAG Service       │
-                                 │   Real-time Market     │
-                                 │   Data Injection       │
+                                 │  Real-time Market Data  │
                                  └───────────┬────────────┘
                                              │
                                              ▼
@@ -84,123 +99,126 @@
 
 ---
 
-## 📈 Analysis Pipeline
+## 2. Analysis Pipeline
 
 ```mermaid
-%%{init: {'theme': 'base', 'themeVariables': { 'primaryColor': '#009688', 'primaryTextColor': '#fff', 'primaryBorderColor': '#00796b', 'lineColor': '#607d8b', 'secondaryColor': '#37474f', 'tertiaryColor': '#263238'}}}%%
 sequenceDiagram
     autonumber
-    participant U as <b>👤 User</b><br/>Event Input
-    participant F as <b>🌐 Frontend</b><br/>Next.js UI
-    participant A as <b>⚡ API</b><br/>FastAPI
-    participant LLM as <b>🤖 LLM</b><br/>DeepSeek/GPT
-    participant KG as <b>🕸️ Graph</b><br/>Knowledge Network
-    participant BT as <b>📊 Backtest</b><br/>Confidence Engine
-    participant DL as <b>🔄 Learner</b><br/>Dynamic Learning
+    participant User as User
+    participant Frontend as Frontend
+    participant API as FastAPI
+    participant LLM as LLM
+    participant KG as Knowledge Graph
+    participant BT as Backtest Engine
+    participant DL as Dynamic Learner
 
-    U->>F: Submit Event
-    F->>A: POST /analyze/stream
-    A->>LLM: Step 1: Event Understanding
-    Note over LLM: Identify Type<br/>Entities<br/>Sentiment
+    User->>Frontend: Submit Event
+    Frontend->>API: POST /analyze/stream
+    API->>LLM: Step 1: Event Understanding
+    Note over LLM: Identify Type, Entities, Sentiment
 
-    A->>LLM: Step 2: Transmission Analysis
+    API->>LLM: Step 2: Transmission Analysis
     LLM->>KG: Query Industry Constraints
     KG-->>LLM: Return Relationship Paths
 
-    A->>LLM: Step 3: Signal Generation
-    A->>BT: Historical Similarity Match
-    BT-->>A: Confidence Adjustment
+    API->>LLM: Step 3: Signal Generation
+    API->>BT: Historical Similarity Match
+    BT-->>API: Confidence Adjustment
 
-    A-->>F: SSE Stream Response
-    F-->>U: Real-time Visualization
+    API-->>Frontend: SSE Stream Response
+    Frontend-->>User: Real-time Visualization
 
-    A->>DL: Learn New Relationships
+    API->>DL: Learn New Relationships
     DL-->>KG: Update Knowledge Graph
 ```
 
 ---
 
-## 🔄 Transmission Reasoning
+## 3. Transmission Reasoning Example
+
+### 3.1 Flow Diagram
 
 ```mermaid
-%%{init: {'theme': 'base', 'themeVariables': { 'primaryColor': '#1a237e', 'primaryTextColor': '#fff', 'primaryBorderColor': '#0d47a1', 'lineColor': '#5c6bc0', 'secondaryColor': '#303f9f', 'tertiaryColor': '#1a237e'}}}%%
 graph TB
-    subgraph Event["🌍 GEO-POLITICAL EVENT"]
-        IRAN["⚔️ IRAN blockades<br/>Strait of Hormuz"]
+    subgraph Event["GEO-POLITICAL EVENT"]
+        IRAN["IRAN blockades Strait of Hormuz"]
     end
 
-    subgraph Supply["📦 SUPPLY SHOCK"]
-        OIL["🛢️ CRUDE OIL<br/>Supply ↓ 15%"]
+    subgraph Supply["SUPPLY SHOCK"]
+        OIL["CRUDE OIL Supply ↓15%"]
     end
 
-    subgraph Transmission["⚡ INDUSTRY CHAIN"]
-        REFIN["🏭 REFINING<br/>Cost ↑ 20%"]
-        CHEM["🧪 PETROCHEM<br/>Cost ↑ 15%"]
-        SHIP["🚢 MARINE<br/>Cost ↑ 25%"]
+    subgraph Transmission["INDUSTRY CHAIN"]
+        REFIN["REFINING Cost ↑20%"]
+        CHEM["PETROCHEM Cost ↑15%"]
+        SHIP["MARINE Cost ↑25%"]
     end
 
-    subgraph Demand["📉 DEMAND IMPACT"]
-        AVIATION["✈️ AVIATION<br/>Demand ↓ 10%"]
-        TOURISM["🏨 TOURISM<br/>Demand ↓ 8%"]
+    subgraph Demand["DEMAND IMPACT"]
+        AVIATION["AVIATION Demand ↓10%"]
+        TOURISM["TOURISM Demand ↓8%"]
     end
 
-    subgraph Safe["💎 SAFE HAVEN"]
-        GOLD["🥇 GOLD<br/>↑ 5-8%"]
+    subgraph Safe["SAFE HAVEN"]
+        GOLD["GOLD ↑5-8%"]
     end
 
-    IRAN -->|{"duration": "1-3d"}| OIL
-    OIL -->|{"rate": "70%", "delay": "3d"}| REFIN
-    OIL -->|{"rate": "60%", "delay": "7d"}| CHEM
-    OIL -->|{"rate": "80%", "delay": "1d"}| SHIP
-    SHIP -->|{"rate": "70%", "delay": "5d"}| AVIATION
-    OIL -.->|"Risk Aversion"| TOURISM
-    OIL -.->|"Safe Haven"| GOLD
-
-    classDef eventNode fill:#c62828,stroke:#b71c1c,color:#fff,stroke-width:2px
-    classDef supplyNode fill:#e65100,stroke:#bf360c,color:#fff,stroke-width:2px
-    classDef transNode fill:#1565c0,stroke:#0d47a1,color:#fff,stroke-width:2px
-    classDef demandNode fill:#6a1b9a,stroke:#4a148c,color:#fff,stroke-width:2px
-    classDef safeNode fill:#2e7d32,stroke:#1b5e20,color:#fff,stroke-width:2px
-
-    class IRAN eventNode
-    class OIL supplyNode
-    class REFIN,CHEM,SHIP transNode
-    class AVIATION,TOURISM demandNode
-    class GOLD safeNode
+    IRAN-->OIL
+    OIL-->REFIN
+    OIL-->CHEM
+    OIL-->SHIP
+    SHIP-->AVIATION
+    OIL-.->TOURISM
+    OIL-.->GOLD
 ```
+
+### 3.2 Transmission Chains
+
+| Path | Type | Rate | Delay |
+|:-----|:-----|:-----|:------|
+| IRAN → CRUDE OIL | Supply Shock | 100% | 1-3d |
+| CRUDE OIL → REFINING | Cost Transmission | 70% | 3d |
+| CRUDE OIL → PETROCHEM | Cost Transmission | 60% | 7d |
+| CRUDE OIL → MARINE | Cost Transmission | 80% | 1d |
+| MARINE → AVIATION | Cost Transmission | 70% | 5d |
+| CRUDE OIL → TOURISM | Risk Aversion | - | - |
+| CRUDE OIL → GOLD | Safe Haven | - | - |
 
 ---
 
-## 🎯 Project Philosophy
+## 4. Project Philosophy
 
-> In the globalized market, major geo-political events, policy changes, and unexpected disasters often transmit rapidly through industry chains within hours to days, triggering chain reactions in related stock prices. Traditional quantitative models relying on historical data struggle to capture these "black swan" events' atypical impacts.
+In the globalized market, major geo-political events, policy changes, and unexpected disasters often transmit rapidly through industry chains within hours to days, triggering chain reactions in related stock prices. Traditional quantitative models relying on historical data struggle to capture these "black swan" events' atypical impacts.
 
 This system leverages LLM's logical reasoning capability to **automatically construct industry chain transmission paths** from raw events, combined with knowledge graph constraints, backtest verification, and real-time market data to generate actionable trading signals.
 
-**Key Innovations:**
-- 🎯 **LLM-Driven Reasoning** — Go beyond historical patterns to reason about novel events
-- 🔗 **Graph-Constrained Transmission** — Deterministic relationships + flexible generalization
-- 📊 **Confidence Calibration** — Backtest-driven signal reliability
-- 🔄 **Self-Learning Loop** — Continuous knowledge graph enrichment
+### Key Innovations
+
+| Innovation | Description |
+|:-----------|:------------|
+| **LLM-Driven Reasoning** | Go beyond historical patterns to reason about novel events |
+| **Graph-Constrained Transmission** | Deterministic relationships + flexible generalization |
+| **Confidence Calibration** | Backtest-driven signal reliability |
+| **Self-Learning Loop** | Continuous knowledge graph enrichment |
 
 ---
 
-## ⚡ Core Capabilities
+## 5. Core Capabilities
 
 | Capability | Description |
-|:------------|:------------|
-| **🤖 Event Understanding** | LLM auto-identifies event type (geo-political/policy/disaster/economic), core entities, market sentiment |
-| **🔗 Industry Chain Transmission** | Multi-level transmission reasoning (cost transmission / demand transmission / substitution effect) |
-| **📊 Trading Signals** | Long/short signals with confidence levels, supporting A-shares, US stocks, ETFs |
-| **⚙️ Backtest Verification** | Dynamic confidence adjustment based on historical similar events |
-| **🔄 Dynamic Learning** | Auto-discover new industry chain relationships, build feedback loop |
-| **⚡ Real-time Streaming** | SSE streaming display of LLM reasoning process |
+|:-----------|:------------|
+| **Event Understanding** | LLM auto-identifies event type (geo-political/policy/disaster/economic), core entities, market sentiment |
+| **Industry Chain Transmission** | Multi-level transmission reasoning (cost transmission / demand transmission / substitution effect) |
+| **Trading Signals** | Long/short signals with confidence levels, supporting A-shares, US stocks, ETFs |
+| **Backtest Verification** | Dynamic confidence adjustment based on historical similar events |
+| **Dynamic Learning** | Auto-discover new industry chain relationships, build feedback loop |
+| **Real-time Streaming** | SSE streaming display of LLM reasoning process |
 
 ---
 
-## 🚀 Technical Highlights
+## 6. Technical Highlights
 
-### 1. Layered LLM Pipeline
+### 6.1 Layered LLM Pipeline
 
 ```
 STEP 1 (Event Understanding) ──► STEP 2 (Transmission Analysis) ──► STEP 3 (Signal Generation)
@@ -208,7 +226,7 @@ STEP 1 (Event Understanding) ──► STEP 2 (Transmission Analysis) ──► 
 
 Each step's output feeds into the next, with context progressively enriching. All LLM calls require structured JSON output with Pydantic validation for type safety.
 
-### 2. Knowledge Graph as Deterministic Skeleton
+### 6.2 Knowledge Graph as Deterministic Skeleton
 
 ```python
 # Industry Knowledge Graph (networkx + JSON)
@@ -217,44 +235,33 @@ Each step's output feeds into the next, with context progressively enriching. Al
 # Edges: Crude Oil → Marine (cost transmission, 80%, 1 day)
 
 # During transmission analysis, inject formatted graph constraints
-# "Prioritize graph constraints, supplement cross-industry links (e.g., risk appetite transmission)"
+# "Prioritize graph constraints, supplement cross-industry links"
 ```
 
 Knowledge graph provides deterministic industry chain relationships; LLM reasons beyond coverage for cross-industry generalization while maintaining accuracy.
 
-### 3. Dynamic Learning Feedback
+### 6.3 Dynamic Learning Feedback
 
 ```mermaid
-%%{init: {'theme': 'base', 'themeVariables': { 'primaryColor': '#00695c', 'primaryTextColor': '#fff', 'primaryBorderColor': '#004d40', 'lineColor': '#26a69a'}}}%%
 graph LR
-    A[📊 Analysis Result] --> B[🔄 Dynamic Learning]
-    B --> C{{"🤔 New Relationship?"}}
-    C -->|YES| D[📈 evidence_count++]
-    D --> E{({"📉 Confidence > Threshold?"})}
-    E -->|YES| F[✅ Merge to Graph]
-    F --> G[📊 Enriched Knowledge Graph]
+    A[Analysis Result] --> B[Dynamic Learning]
+    B --> C{New Relationship?}
+    C -->|YES| D[evidence_count++]
+    D --> E{Confidence > Threshold?}
+    E -->|YES| F[Merge to Graph]
+    F --> G[Enriched Knowledge Graph]
     G --> A
-    C -->|NO| H[⏭️ Skip]
+    C -->|NO| H[Skip]
     E -->|NO| H
-
-    classDef processNode fill:#1565c0,stroke:#0d47a1,color:#fff,stroke-width:2px
-    classDef decisionNode fill:#6a1b9a,stroke:#4a148c,color:#fff,stroke-width:2px
-    classDef yesNode fill:#2e7d32,stroke:#1b5e20,color:#fff,stroke-width:2px
-    classDef noNode fill:#62757f,stroke:#455a64,color:#fff,stroke-width:2px
-
-    class B processNode
-    class C,E decisionNode
-    class F,G yesNode
-    class A,H noNode
 ```
 
-从分析结果中自动学习新产业链关系（evidence_count 增量提升置信度），发现的事件模式用于类型匹配增强。
+From analysis results, automatically learn new industry chain relationships (evidence_count increments to boost confidence), discovered event patterns are used for type matching enhancement.
 
-### 4. Backtest-Driven Confidence Calibration
+### 6.4 Backtest-Driven Confidence Calibration
 
 ```
 Current Event ──► Historical Similarity Match ──► Confidence Adjustment
-                  (Similarity Weighted: Title 25% + Type 20% + Entity Overlap 30% + Sentiment 25%)
+                  (Weighted: Title 25%, Type 20%, Entity 30%, Sentiment 25%)
 
 High Similarity (>0.8) ──► +10% Confidence
 Low Similarity (<0.4)  ──► -10% Confidence
@@ -262,7 +269,7 @@ Low Similarity (<0.4)  ──► -10% Confidence
 
 Not executing backtest trades, but dynamically adjusting signal confidence based on historical event patterns to improve signal reliability.
 
-### 5. Event Type Driven RAG Context
+### 6.5 Event Type Driven RAG Context
 
 ```python
 EVENT_TYPE_CONTEXT_MAP = {
@@ -272,7 +279,7 @@ EVENT_TYPE_CONTEXT_MAP = {
         "include_hot_sectors": True
     },
     "policy": {
-        "news_priority": ["central bank", "fiscal", "regulation", "policy"],
+        "news_priority": ["central bank", "fiscal", "regulation"],
         "market_data": ["bank", "securities", "real estate", "insurance"],
         ...
     },
@@ -282,7 +289,7 @@ EVENT_TYPE_CONTEXT_MAP = {
 
 RAG service selectively injects relevant context (news priority + market data types) based on event type, not retrieving all data to reduce noise.
 
-### 6. Pure SVG Hand-Drawn Transmission Graph
+### 6.6 Pure SVG Hand-Drawn Transmission Graph
 
 Frontend implements pure SVG hand-drawn transmission network (no third-party libraries), featuring:
 - **Layered Layout Algorithm** (stratified by transmission depth, same layer vertically centered)
@@ -292,30 +299,33 @@ Frontend implements pure SVG hand-drawn transmission network (no third-party lib
 
 ---
 
-## 💡 Demo: US-Iran Military Conflict Analysis
+## 7. System Demonstration
 
-**Input:**
+### 7.1 Input
+
 ```
 US-IRAN military conflict, Iran blockades Strait of Hormuz
 ```
 
-**System Output:**
+### 7.2 Output
 
-### STEP 1: Event Understanding
+#### Step 1: Event Understanding
 - **Event Type:** Geo-political
 - **Core Entities:** USA, Iran, Strait of Hormuz
 - **Market Sentiment:** -0.85 (extremely bearish)
 - **Direct Impact:** Crude Oil (supply reduction, +8), Marine (cost increase, -5)
 
-### STEP 2: Transmission Analysis
-```
-CRUDE OIL → REFINING (cost transmission, 70%, 3 days)
-CRUDE OIL → PETROCHEM (cost transmission, 60%, 7 days)
-CRUDE OIL → MARINE (cost transmission, 80%, 1 day)
-MARINE → AVIATION (cost transmission, 70%, 5 days)
-```
+#### Step 2: Transmission Analysis
 
-### STEP 3: Trading Signals
+| Source | Target | Type | Rate | Delay |
+|:-------|:-------|:-----|:-----|:------|
+| CRUDE OIL | REFINING | Cost Transmission | 70% | 3d |
+| CRUDE OIL | PETROCHEM | Cost Transmission | 60% | 7d |
+| CRUDE OIL | MARINE | Cost Transmission | 80% | 1d |
+| MARINE | AVIATION | Cost Transmission | 70% | 5d |
+
+#### Step 3: Trading Signals
+
 | Industry | Signal | Confidence | Related Assets |
 |:---------|:-------|:-----------|:---------------|
 | Oil Exploration | LONG | 85% | CNOOC, XOM, CVX |
@@ -324,26 +334,26 @@ MARINE → AVIATION (cost transmission, 70%, 5 days)
 
 ---
 
-## 🛠️ Tech Stack
+## 8. Tech Stack
 
 | Layer | Technology |
 |:------|:-----------|
-| **Backend** | FastAPI · Python 3.11+ · Pydantic · networkx · uvicorn |
-| **LLM** | SiliconFlow (Recommended) · OpenAI · Claude · Ollama |
-| **Frontend** | Next.js 14 · React 18 · TypeScript · Tailwind CSS |
-| **Graph** | networkx · pyvis (Interactive) · Pure SVG (Hand-drawn) |
-| **Data** | AkShare · Tushare (Free Data Sources) |
-| **Infra** | Docker · Docker Compose v2 · Nginx |
+| **Backend** | FastAPI, Python 3.11+, Pydantic, networkx, uvicorn |
+| **LLM** | SiliconFlow (Recommended), OpenAI, Claude, Ollama |
+| **Frontend** | Next.js 14, React 18, TypeScript, Tailwind CSS |
+| **Graph** | networkx, pyvis (Interactive), Pure SVG (Hand-drawn) |
+| **Data** | AkShare, Tushare (Free Data Sources) |
+| **Infra** | Docker, Docker Compose v2, Nginx |
 
 ---
 
-## 📂 Project Structure
+## 9. Project Structure
 
 ```
 event-trading-system/
-├── deploy.sh              # VPS one-click deployment
+├── deploy.sh              # VPS one-click deployment script
 ├── docker-compose.yml     # Container orchestration (with Nginx)
-├── nginx.conf             # Nginx config (HTTP + HTTPS template)
+├── nginx.conf             # Nginx configuration (HTTP + HTTPS template)
 ├── .env.example           # Environment variables template
 │
 ├── backend/
@@ -360,17 +370,17 @@ event-trading-system/
 │   │       ├── network_graph.py    # Transmission graph generation
 │   │       ├── semantic_matcher.py # Semantic matcher
 │   │       ├── causal_reasoning/   # Causal reasoning module
-│   │       │   ├── industry_graph.py      # Industry knowledge graph
-│   │       │   ├── dynamic_graph_learner.py # Dynamic learning
-│   │       │   └── llm_reasoner.py         # LLM enhanced scoring
+│   │       │   ├── industry_graph.py
+│   │       │   ├── dynamic_graph_learner.py
+│   │       │   └── llm_reasoner.py
 │   │       ├── signal_output/
-│   │       │   └── llm_explainer.py        # Market commentary generation
-│   │       ├── impact_quant/         # Backtest system
-│   │       │   ├── event_backtest.py      # Event backtest engine
-│   │       │   └── historical_signals.py  # Historical signal library
+│   │       │   └── llm_explainer.py
+│   │       ├── impact_quant/       # Backtest system
+│   │       │   ├── event_backtest.py
+│   │       │   └── historical_signals.py
 │   │       ├── event_extraction/
-│   │       │   └── llm_extractor.py        # LLM event extraction
-│   │       └── data_providers/       # Data providers
+│   │       │   └── llm_extractor.py
+│   │       └── data_providers/      # Data providers
 │   │           ├── base.py
 │   │           ├── akshare_provider.py
 │   │           └── tushare_provider.py
@@ -378,15 +388,15 @@ event-trading-system/
 │
 └── frontend/
     ├── src/
-    │   ├── app/page.tsx              # Main page (5-tab layout)
+    │   ├── app/page.tsx
     │   ├── components/
-    │   │   ├─ TransmissionGraph.tsx  # SVG transmission graph
-    │   │   ├── TransmissionChain.tsx   # Transmission chain list
-    │   │   ├── SentimentMeter.tsx     # Sentiment gauge
-    │   │   ├── DegradationBanner.tsx # Fallback banner
-    │   │   └── Sidebar.tsx            # Input panel
+    │   │   ├── TransmissionGraph.tsx
+    │   │   ├── TransmissionChain.tsx
+    │   │   ├── SentimentMeter.tsx
+    │   │   ├── DegradationBanner.tsx
+    │   │   └── Sidebar.tsx
     │   ├── hooks/
-    │   │   └── useAnalysis.ts         # SSE streaming analysis hook
+    │   │   └── useAnalysis.ts
     │   └── types/
     │       └── index.ts
     └── Dockerfile
@@ -394,61 +404,90 @@ event-trading-system/
 
 ---
 
-## 🔌 API Endpoints
+## 10. API Reference
 
-```bash
-# Normal analysis (non-streaming)
+### 10.1 Analyze Event (Non-Streaming)
+
+```http
 POST /api/v1/analyze
+Content-Type: application/json
+
 {
   "title": "US-IRAN Military Conflict",
   "content": "Iran announces blockade of Strait of Hormuz..."
 }
+```
 
-# Streaming analysis (SSE, step-by-step response)
+### 10.2 Analyze Event (Streaming)
+
+```http
 POST /api/v1/analyze/stream
+```
 
-# Knowledge graph statistics
+Response: Server-Sent Events (SSE) stream
+
+### 10.3 Knowledge Graph
+
+```http
+# Statistics
 GET /api/v1/knowledge-graph/stats
 
-# Dynamic learning relationships
+# Relationships
 GET /api/v1/knowledge-graph/relationships?min_confidence=0.5
+```
 
-# Historical backtest statistics
+### 10.4 Historical Events
+
+```http
 GET /api/v1/history/events
+```
 
-# Health check
+### 10.5 Health Check
+
+```http
 GET /health
 ```
 
 ---
 
-## 🚀 Deployment
+## 11. Deployment Guide
 
-### Docker Deployment (Local / VPS)
+### 11.1 Local Deployment
+
+#### Prerequisites
+- Docker Desktop 20.10+
+- Git
+
+#### Steps
 
 ```bash
+# 1. Clone repository
 git clone https://github.com/mkih76/event-driven-trading-system.git
 cd event-driven-trading-system
 
-# Configure API Key
+# 2. Configure environment
 cp .env.example .env
-# Edit .env to add SILICONFLOW_API_KEY (Recommended: https://cloud.siliconflow.cn)
+# Edit .env to add SILICONFLOW_API_KEY
 
-# Start
+# 3. Start services
 docker compose up -d
 
-# Access
-open http://localhost
+# 4. Access
+# Frontend: http://localhost
+# API: http://localhost:8080
+# Health: http://localhost:8080/health
 ```
 
-### Manual Deployment
+#### Manual Setup (Alternative)
 
 **Backend:**
 ```bash
 cd backend
-python -m venv venv && source venv/bin/activate  # Windows: venv\Scripts\activate
+python -m venv venv
+source venv/bin/activate  # Windows: venv\Scripts\activate
 pip install -r requirements.txt
-cp ../.env.example .env && vi .env  # Add API Key
+cp ../.env.example .env
+# Edit .env to add API Key
 uvicorn app.main:app --reload --port 8080
 ```
 
@@ -462,29 +501,126 @@ npm run dev
 
 ---
 
-## 🖥️ VPS Post-Deployment Management
+### 11.2 Cloud Deployment (VPS)
 
-> **Note:** VPS requires 2G+ RAM (vector model loading needs 300-500MB)
+#### Prerequisites
+- Ubuntu 20.04+ / Debian 11+
+- 2G+ RAM (vector model loading needs 300-500MB)
+- Domain name (optional, for HTTPS)
+
+#### One-Click Deployment
 
 ```bash
-# Enter directory
+# Login to VPS as root
+bash <(curl -sL https://raw.githubusercontent.com/mkih76/event-driven-trading-system/master/deploy.sh)
+```
+
+The script will:
+1. Install Docker and Docker Compose
+2. Clone/pull the repository
+3. Configure environment variables (interactive)
+4. Set up firewall (ports 22, 80, 443)
+5. Build and start containers
+6. Perform health checks
+
+#### Manual VPS Setup
+
+```bash
+# 1. Install Docker
+curl -fsSL https://get.docker.com | sh
+systemctl enable docker
+
+# 2. Install Docker Compose
+curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+chmod +x /usr/local/bin/docker-compose
+
+# 3. Create directory
+mkdir -p /opt/event-trading-system
 cd /opt/event-trading-system
 
-# View logs
-docker compose logs -f
+# 4. Clone repository
+git clone https://github.com/mkih76/event-driven-trading-system.git .
+git clone https://github.com/mkih76/event-driven-trading-system.git /opt/event-trading-system
 
-# Restart services
-docker compose restart
+# 5. Configure environment
+cp .env.example .env
+# Edit .env with your API keys
 
-# Update code
-git pull && docker compose up -d --build
+# 6. Start services
+docker compose up -d --build
 
-# Stop services
-docker compose down
+# 7. Configure firewall
+ufw allow 22/tcp
+ufw allow 80/tcp
+ufw allow 443/tcp
+ufw --force enable
+```
+
+#### Optional: HTTPS Configuration
+
+```bash
+# Install certbot
+apt-get update && apt-get install -y certbot python3-certbot-nginx
+
+# Obtain SSL certificate
+certbot --nginx -d your-domain.com --noninteractive --agree-tos -m admin@your-domain.com
+
+# Auto-renewal (optional)
+certbot renew --dry-run
+```
+
+#### Post-Deployment Management
+
+| Command | Description |
+|:--------|:------------|
+| `docker compose logs -f` | View real-time logs |
+| `docker compose restart` | Restart all services |
+| `docker compose restart backend` | Restart backend only |
+| `git pull && docker compose up -d --build` | Update and rebuild |
+| `docker compose down` | Stop all services |
+| `docker compose exec backend python -m pytest` | Run tests |
+
+#### Troubleshooting
+
+```bash
+# Check container status
+docker compose ps
+
+# Check logs
+docker compose logs backend
+docker compose logs frontend
+docker compose logs nginx
+
+# Rebuild specific service
+docker compose up -d --build backend
+
+# Reset database (if needed)
+docker compose exec backend rm -f /app/data/events.db
+docker compose restart backend
 ```
 
 ---
 
-## 📜 License
+## 12. License
 
-MIT
+MIT License
+
+Copyright (c) 2024 Event Trading Intelligence System
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
