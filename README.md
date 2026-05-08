@@ -10,11 +10,159 @@
 
 ---
 
+## 系统架构
+
+```mermaid
+graph TB
+    subgraph Frontend["前端 (Next.js 14)"]
+        UI[用户界面]
+        SSE[SSE 流式展示]
+        Tabs[5 Tab 视图]
+    end
+
+    subgraph Gateway["API 网关 (FastAPI)"]
+        API[/api/v1/analyze<br/>/api/v1/analyze/stream]
+    end
+
+    subgraph Core["核心分析引擎"]
+        S1[Step 1: 事件理解]
+        S2[Step 2: 传导分析]
+        S3[Step 3: 信号生成]
+        S35[Step 3.5: 回测校准]
+        S4[Step 4: 动态学习]
+    end
+
+    subgraph Knowledge["知识层"]
+        KG[知识图谱<br/>graph_data.json]
+        DL[动态学习器<br/>discoveries.json]
+        RAG[RAG 服务<br/>实时上下文]
+    end
+
+    subgraph Data["数据层"]
+        News[财经新闻]
+        Market[市场行情]
+    end
+
+    UI --> API
+    API --> S1
+    S1 --> S2
+    S2 --> S3
+    S3 --> S35
+    S35 --> S4
+    S4 --> DL
+    DL --> KG
+    S2 --> KG
+    S1 --> RAG
+    RAG --> News
+    RAG --> Market
+
+    classDef frontend fill:#e1f5fe,stroke:#01579b,color:#01579b
+    classDef gateway fill:#fff3e0,stroke:#e65100,color:#e65100
+    classDef core fill:#e8f5e9,stroke:#2e7d32,color:#2e7d32
+    classDef knowledge fill:#f3e5f5,stroke:#7b1fa2,color:#7b1fa2
+    classDef data fill:#fce4ec,stroke:#c2185b,color:#c2185b
+
+    class UI,SSE,Tabs frontend
+    class API gateway
+    class S1,S2,S3,S35,S4 core
+    class KG,DL,RAG knowledge
+    class News,Market data
+```
+
+---
+
+## 分析流程
+
+```mermaid
+sequenceDiagram
+    participant U as 用户
+    participant F as 前端
+    participant A as API
+    participant LLM as LLM
+    participant KG as 知识图谱
+    participant BT as 回测引擎
+    participant DL as 动态学习
+
+    U->>F: 输入事件
+    F->>A: POST /analyze/stream
+    A->>LLM: Step 1: 理解事件
+
+    Note over LLM: 识别事件类型<br/>核心实体<br/>市场情绪
+
+    A->>LLM: Step 2: 传导分析
+    LLM->>KG: 获取图谱约束
+    KG-->>LLM: 产业链关系
+
+    Note over LLM: 推理传导路径<br/>成本/需求传导
+
+    A->>LLM: Step 3: 生成信号
+    A->>BT: 回测校准
+    BT-->>A: 置信度调整
+
+    A-->>F: SSE 流式响应
+    F-->>U: 实时展示进度
+
+    A->>DL: 学习新关系
+    DL-->>KG: 更新图谱
+```
+
+---
+
+## 传导推理示例
+
+```mermaid
+graph LR
+    subgraph Event["地缘政治事件"]
+        IRAN[伊朗封锁<br/>霍尔木兹海峡]
+    end
+
+    subgraph Supply["供给冲击"]
+        OIL[原油<br/>供给↓]
+    end
+
+    subgraph Transmission["产业链传导"]
+        REFIN[炼化<br/>成本↑]
+        CHEM[化工<br/>成本↑]
+        SHIP[航运<br/>成本↑]
+    end
+
+    subgraph Demand["需求传导"]
+        AVIATION[航空<br/>需求↓]
+        TOURISM[旅游<br/>需求↓]
+    end
+
+    subgraph Safe["避险资产"]
+        GOLD[黄金<br/>上涨]
+    end
+
+    IRAN --> OIL
+    OIL --> REFIN
+    OIL --> CHEM
+    OIL --> SHIP
+    REFIN -.->|替代| AVIATION
+    SHIP --> AVIATION
+    OIL -.->|风险偏好| TOURISM
+    OIL -.->|避险| GOLD
+
+    classDef event fill:#ffcdd2,stroke:#c62828,color:#c62828
+    classDef negative fill:#ffecb3,stroke:#f9a825,color:#f9a825
+    classDef positive fill:#c8e6c9,stroke:#388e3c,color:#388e3c
+    classDef neutral fill:#e1f5fe,stroke:#0288d1,color:#0288d1
+
+    class IRAN event
+    class OIL event
+    class REFIN,CHEM,SHIP negative
+    class AVIATION,TOURISM negative
+    class GOLD positive
+```
+
+---
+
 ## 项目理念
 
 在全球化市场中，重大地缘政治事件、政策变化、突发灾难往往在数小时至数天内沿产业链快速传导，引发相关行业股价的连锁反应。传统量化模型依赖历史数据，难以捕捉这些「黑天鹅」事件的非典型影响。
 
-本系统利用大语言模型的逻辑推理能力，从事件原文出发，**自动构建产业链传导路径**，并结合知识图谱约束、回测验证、实时市场数据，生成可执行的投资信号。
+本系统利用大语言模型的逻辑推理能力，从事件原文出发，**自动构建产业链传导路径**，并结合知识图谱约束、回测验证、实时市场数据，生成可执行的投信号。
 
 ---
 
@@ -28,56 +176,6 @@
 | **回测验证** | 基于历史相似事件动态调整信号置信度 |
 | **动态学习** | 从每次分析中自动发现新产业链关系，构建反馈闭环 |
 | **流式展示** | 实时展示 LLM 推理过程（SSE），用户可见分析步骤 |
-
----
-
-## 架构设计
-
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                        前端 (Next.js 14)                        │
-│  ┌─────────┐ ┌─────────┐ ┌─────────┐ ┌─────────┐ ┌─────────┐ │
-│  │事件摘要 │ │传导图谱 │ │传导明细 │ │历史回测 │ │交易建议 │ │
-│  └────┬────┘ └────┬────┘ └────┬────┘ └────┬────┘ └────┬────┘ │
-└───────┼────────────┼────────────┼────────────┼────────────┼─────┘
-        │            │            │            │            │
-        ▼            ▼            ▼            ▼            ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                    FastAPI 网关 (main.py)                        │
-│                      /api/v1/analyze/stream                      │
-└─────────────────────────────────────────────────────────────────┘
-                               │
-          ┌────────────────────┼────────────────────┐
-          ▼                    ▼                    ▼
-   ┌─────────────┐     ┌─────────────┐     ┌─────────────┐
-   │  Step 1     │     │  Step 2     │     │  Step 3     │
-   │ 事件理解    │────►│ 传导分析    │────►│ 信号生成    │
-   │ (LLM)       │     │ (LLM+图谱)  │     │ (LLM)       │
-   └─────────────┘     └──────┬──────┘     └─────────────┘
-                              │
-              ┌───────────────┼───────────────┐
-              ▼               ▼               ▼
-        ┌──────────┐   ┌──────────┐   ┌──────────┐
-        │知识图谱  │   │动态学习  │   │回测引擎  │
-        │骨架约束  │   │反馈闭环  │   │置信度校准│
-        └──────────┘   └──────────┘   └──────────┘
-              │               │               │
-              ▼               ▼               ▼
-        ┌──────────┐   ┌──────────┐   ┌──────────┐
-        │networkx  │   │learner   │   │backtest  │
-        │graph.json│   │discoveries│  │signals   │
-        └──────────┘   └──────────┘   └──────────┘
-                               │
-                    ┌──────────┴──────────┐
-                    │       RAG 服务       │
-                    │   实时市场数据注入   │
-                    └──────────┬──────────┘
-                               │
-                    ┌──────────┴──────────┐
-                    │     数据提供者       │
-                    │ AkShare / Tushare   │
-                    └─────────────────────┘
-```
 
 ---
 
@@ -107,12 +205,24 @@ Step 1 (事件理解) → Step 2 (传导分析) → Step 3 (信号生成)
 
 ### 3. 动态学习反馈闭环
 
-```
-每次分析结果 → 动态学习器 → 新关系/新模式/新节点
-                               ↓
-                         合并到基础图谱
-                               ↓
-                    更丰富的图谱约束 → 下次分析
+```mermaid
+graph LR
+    A[分析结果] --> B[动态学习]
+    B --> C{新关系?}
+    C -->|是| D[evidence_count++]
+    D --> E{置信度>阈值?}
+    E -->|是| F[合并到图谱]
+    F --> G[更丰富的图谱]
+    G --> A
+    C -->|否| H[跳过]
+
+    classDef learning fill:#e3f2fd,stroke:#1565c0,color:#1565c0
+    classDef yes fill:#c8e6c9,stroke:#2e7d32,color:#2e7d32
+    classDef no fill:#ffcdd2,stroke:#c62828,color:#c62828
+
+    class B,D learning
+    class F,G yes
+    class H no
 ```
 
 从分析结果中自动学习新产业链关系（evidence_count 增量提升置信度），发现的事件模式用于类型匹配增强。
@@ -247,7 +357,7 @@ event-trading-system/
     ├── src/
     │   ├── app/page.tsx              # 主页面（5 Tab 架构）
     │   ├── components/
-    │   │   ├── TransmissionGraph.tsx  # SVG 传导图谱
+    │   │   ├─ TransmissionGraph.tsx  # SVG 传导图谱
     │   │   ├── TransmissionChain.tsx   # 传导链列表
     │   │   ├── SentimentMeter.tsx     # 情绪仪表盘
     │   │   ├── DegradationBanner.tsx # 降级提示
@@ -271,13 +381,13 @@ POST /api/v1/analyze
   "content": "伊朗宣布封锁霍尔木兹海峡..."
 }
 
-# 流式分析（SSE，逐步骤返回）
+# 流式分析（SSE，逐步返回）
 POST /api/v1/analyze/stream
 
 # 知识图谱统计
 GET /api/v1/knowledge-graph/stats
 
-# 动态学习关系
+# 态学习关系
 GET /api/v1/knowledge-graph/relationships?min_confidence=0.5
 
 # 历史回测统计
