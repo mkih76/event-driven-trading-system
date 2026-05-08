@@ -1,13 +1,14 @@
-# 📊 Event Trading Analysis System
+# 🧠 Event Trading Intelligence System
 
 <div align="center">
 
-*A Machine Learning powered event-driven trading analysis system*
+### AI-Powered Event-Driven Trading Analysis Platform
 
 [![Python](https://img.shields.io/badge/Python%203.11+-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-009688?style=for-the-badge&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
 [![Next.js](https://img.shields.io/badge/Next.js%2014-000000?style=for-the-badge&logo=next.js&logoColor=white)](https://nextjs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![PyTorch](https://img.shields.io/badge/PyTorch-EE4C2C?style=for-the-badge&logo=pytorch&logoColor=white)](https://pytorch.org/)
 [![License](https://img.shields.io/badge/License-MIT-FF5722?style=for-the-badge)]()
 [![Docker](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white)](https://www.docker.com/)
 
@@ -20,333 +21,356 @@
 ## 🎯 系统架构
 
 ```
-┌─────────────────────────────────────────────────────────────────────────────────────┐
-│                                      用户输入                                        │
-│                               "美国与伊朗爆发军事冲突"                                  │
-└─────────────────────────────────────────────────────────────────────────────────────┘
-                                          │
-                                          ▼
-┌─────────────────────────────────────────────────────────────────────────────────────┐
-│  ┌─────────┐ ┌─────────┐ ┌─────────┐ ┌─────────┐ ┌─────────┐                        │
-│  │ 事件摘要 │ │ 传导图谱 │ │ 传导明细 │ │ 历史回测 │ │ 交易建议 │     ◄── 前端界面   │
-│  └────┬────┘ └────┬────┘ └────┬────┘ └────┬────┘ └────┬────┘                        │
-└───────┼────────────┼────────────┼────────────┼────────────┼──────────────────────────┘
-        │            │            │            │            │
-        │ SSE 流式响应 ◄──────────┘            │            │
-        │            │                       │            │
-        ▼            ▼                       ▼            ▼
-┌─────────────────────────────────────────────────────────────────────────────────────┐
-│                            🚀 FastAPI 网关                                          │
-│                   /api/v1/analyze    /api/v1/analyze/stream                         │
-└─────────────────────────────────────────────────────────────────────────────────────┘
-                                          │
-          ┌───────────────────────────────┼───────────────────────────────┐
-          │                               │                               │
-          ▼                               ▼                               ▼
-┌─────────────────┐             ┌─────────────────┐             ┌─────────────────┐
-│   Step 1        │             │   Step 2        │             │   Step 3        │
-│   事件理解       │────────────►│   传导分析       │────────────►│   信号生成       │
-│   (LLM)         │             │   (LLM + 图谱)   │             │   (LLM)         │
-└─────────────────┘             └────────┬────────┘             └─────────────────┘
-                                        │
-              ┌─────────────────────────┼─────────────────────────┐
-              │                         │                         │
-              ▼                         ▼                         ▼
-     ┌────────────────┐      ┌────────────────┐         ┌────────────────┐
-     │   知识图谱       │      │   动态学习      │         │   回测引擎      │
-     │   产业链关系     │      │   反馈闭环      │         │   置信度校准    │
-     │   (networkx)    │      │  (learner)     │         │  (backtest)    │
-     └────────────────┘      └────────────────┘         └────────────────┘
-              │                         │                         │
-              └─────────────────────────┼─────────────────────────┘
-                                        │
-                                        ▼
-                            ┌─────────────────────┐
-                            │     RAG 服务         │
-                            │  实时市场数据注入    │
-                            └──────────┬──────────┘
-                                       │
-                                       ▼
-                            ┌─────────────────────┐
-                            │   AkShare / Tushare │
-                            │     财经数据源       │
-                            └─────────────────────┘
+┌─────────────────────────────────────────────────────────────────────────────────────────────┐
+│                                    USER INPUT                                                │
+│                                  "US-IRAN Military Conflict"                                  │
+└─────────────────────────────────────────────────────────────────────────────────────────────┘
+                                              │
+                    ┌─────────────────────────┼─────────────────────────┐
+                    │                         │                         │
+                    ▼                         ▼                         ▼
+┌───────────────────────────────────┐ ┌───────────────────────────────┐ ┌───────────────────┐
+│  ┌─────────┐ ┌─────────┐         │ │ ┌─────────┐ ┌─────────┐       │ │ ┌─────────┐       │
+│  │ Event   │ │ Trans.  │         │ │ │ Trans.  │ │ Back-   │       │ │ │ Signal  │       │
+│  │ Summary │ │ Map     │         │ │ │ Details │ │ test    │       │ │ │ Report  │       │
+│  └────┬────┘ └────┬────┘         │ │ └────┬────┘ └────┬────┘       │ │ └────┬────┘       │
+└───────┼───────────┼───────────────┼─┼──────┼──────────┼────────────┼─┼──────┼─────────────┘
+        │           │               │ │      │          │            │ │      │
+        │    SSE Streaming ◄────────┘ │      │          │            │ │      │
+        │           │                 │      │          │            │ │      │
+        ▼           ▼                 ▼      ▼          ▼            ▼ ▼      ▼
+┌─────────────────────────────────────────────────────────────────────────────────────────────┐
+│                                        ⚡ FastAPI Gateway                                     │
+│                                /api/v1/analyze  │  /api/v1/analyze/stream                   │
+└─────────────────────────────────────────────────────────────────────────────────────────────┘
+                                              │
+                    ┌─────────────────────────┼─────────────────────────┐
+                    │                         │                         │
+                    ▼                         ▼                         ▼
+        ┌───────────────────┐     ┌───────────────────────┐     ┌───────────────────┐
+        │    STEP 1         │     │    STEP 2             │     │    STEP 3         │
+        │  ┌─────────────┐  │     │  ┌─────────────────┐  │     │  ┌─────────────┐  │
+        │  │ Event       │  │     │  │ Transmission    │  │     │  │ Signal      │  │
+        │  │ Understanding│ │────►│  │ Analysis       │  │────►│  │ Generation  │  │
+        │  │    (LLM)    │  │     │  │ (LLM + Graph)  │  │     │  │    (LLM)    │  │
+        │  └─────────────┘  │     │  └────────┬────────┘  │     │  └─────────────┘  │
+        └───────────────────┘     └───────────┼───────────┘     └───────────────────┘
+                                              │
+                    ┌─────────────────────────┼─────────────────────────┐
+                    │                         │                         │
+                    ▼                         ▼                         ▼
+           ┌────────────────┐      ┌────────────────────┐       ┌────────────────┐
+           │   Knowledge    │      │   Dynamic          │       │   Backtest    │
+           │   Graph        │      │   Learning         │       │   Engine       │
+           │   Industry     │      │   Feedback Loop    │       │   Confidence   │
+           │   Relations    │      │   (learner)        │       │   Calibration   │
+           └────────┬───────┘      └─────────┬──────────┘       └────────┬───────┘
+                    │                         │                         │
+                    └─────────────────────────┼─────────────────────────┘
+                                              │
+                                              ▼
+                                 ┌────────────────────────┐
+                                 │      RAG Service       │
+                                 │   Real-time Market     │
+                                 │   Data Injection       │
+                                 └───────────┬────────────┘
+                                             │
+                                             ▼
+                                 ┌────────────────────────┐
+                                 │   AkShare / Tushare    │
+                                 │   Financial Data API   │
+                                 └────────────────────────┘
 ```
 
 ---
 
-## 📈 分析流程
+## 📈 Analysis Pipeline
 
 ```mermaid
+%%{init: {'theme': 'base', 'themeVariables': { 'primaryColor': '#009688', 'primaryTextColor': '#fff', 'primaryBorderColor': '#00796b', 'lineColor': '#607d8b', 'secondaryColor': '#37474f', 'tertiaryColor': '#263238'}}}%%
 sequenceDiagram
     autonumber
-    participant U as 👤 用户
-    participant F as 🌐 前端
-    participant A as ⚡ API
-    participant LLM as 🤖 LLM
-    participant KG as 🕸️ 知识图谱
-    participant BT as 📊 回测引擎
-    participant DL as 🔄 动态学习
+    participant U as <b>👤 User</b><br/>Event Input
+    participant F as <b>🌐 Frontend</b><br/>Next.js UI
+    participant A as <b>⚡ API</b><br/>FastAPI
+    participant LLM as <b>🤖 LLM</b><br/>DeepSeek/GPT
+    participant KG as <b>🕸️ Graph</b><br/>Knowledge Network
+    participant BT as <b>📊 Backtest</b><br/>Confidence Engine
+    participant DL as <b>🔄 Learner</b><br/>Dynamic Learning
 
-    U->>F: 输入事件
+    U->>F: Submit Event
     F->>A: POST /analyze/stream
-    A->>LLM: Step 1: 理解事件
-    Note over LLM: 识别类型、实体、情绪
+    A->>LLM: Step 1: Event Understanding
+    Note over LLM: Identify Type<br/>Entities<br/>Sentiment
 
-    A->>LLM: Step 2: 传导分析
-    LLM->>KG: 获取产业链约束
-    KG-->>LLM: 返回关系路径
+    A->>LLM: Step 2: Transmission Analysis
+    LLM->>KG: Query Industry Constraints
+    KG-->>LLM: Return Relationship Paths
 
-    A->>LLM: Step 3: 生成信号
-    A->>BT: 历史相似度匹配
-    BT-->>A: 置信度调整
+    A->>LLM: Step 3: Signal Generation
+    A->>BT: Historical Similarity Match
+    BT-->>A: Confidence Adjustment
 
-    A-->>F: SSE 流式响应
-    F-->>U: 实时展示进度
+    A-->>F: SSE Stream Response
+    F-->>U: Real-time Visualization
 
-    A->>DL: 学习新关系
-    DL-->>KG: 更新图谱
+    A->>DL: Learn New Relationships
+    DL-->>KG: Update Knowledge Graph
 ```
 
 ---
 
-## 🔄 传导推理示例
+## 🔄 Transmission Reasoning
 
 ```mermaid
-graph LR
-    subgraph Event["🗺️ 地缘政治事件"]
-        IRAN["🇮🇷 伊朗封锁<br/>霍尔木兹海峡"]
+%%{init: {'theme': 'base', 'themeVariables': { 'primaryColor': '#1a237e', 'primaryTextColor': '#fff', 'primaryBorderColor': '#0d47a1', 'lineColor': '#5c6bc0', 'secondaryColor': '#303f9f', 'tertiaryColor': '#1a237e'}}}%%
+graph TB
+    subgraph Event["🌍 GEO-POLITICAL EVENT"]
+        IRAN["⚔️ IRAN blockades<br/>Strait of Hormuz"]
     end
 
-    subgraph Supply["⚡ 供给冲击"]
-        OIL["🛢️ 原油<br/>供给 ↓"]
+    subgraph Supply["📦 SUPPLY SHOCK"]
+        OIL["🛢️ CRUDE OIL<br/>Supply ↓ 15%"]
     end
 
-    subgraph Transmission["🔗 产业链传导"]
-        REFIN["🏭 炼化<br/>成本 ↑"]
-        CHEM["🧪 化工<br/>成本 ↑"]
-        SHIP["🚢 航运<br/>成本 ↑"]
+    subgraph Transmission["⚡ INDUSTRY CHAIN"]
+        REFIN["🏭 REFINING<br/>Cost ↑ 20%"]
+        CHEM["🧪 PETROCHEM<br/>Cost ↑ 15%"]
+        SHIP["🚢 MARINE<br/>Cost ↑ 25%"]
     end
 
-    subgraph Demand["📉 需求抑制"]
-        AVIATION["✈️ 航空<br/>需求 ↓"]
-        TOURISM["🏨 旅游<br/>需求 ↓"]
+    subgraph Demand["📉 DEMAND IMPACT"]
+        AVIATION["✈️ AVIATION<br/>Demand ↓ 10%"]
+        TOURISM["🏨 TOURISM<br/>Demand ↓ 8%"]
     end
 
-    subgraph Safe["💎 避险资产"]
-        GOLD["🥇 黄金<br/>上涨 ↑"]
+    subgraph Safe["💎 SAFE HAVEN"]
+        GOLD["🥇 GOLD<br/>↑ 5-8%"]
     end
 
-    IRAN --> OIL
-    OIL --> REFIN
-    OIL --> CHEM
-    OIL --> SHIP
-    SHIP --> AVIATION
-    OIL -.->|"风险偏好"| TOURISM
-    OIL -.->|"避险需求"| GOLD
+    IRAN -->|{"duration": "1-3d"}| OIL
+    OIL -->|{"rate": "70%", "delay": "3d"}| REFIN
+    OIL -->|{"rate": "60%", "delay": "7d"}| CHEM
+    OIL -->|{"rate": "80%", "delay": "1d"}| SHIP
+    SHIP -->|{"rate": "70%", "delay": "5d"}| AVIATION
+    OIL -.->|"Risk Aversion"| TOURISM
+    OIL -.->|"Safe Haven"| GOLD
 
-    style IRAN fill:#ffcdd2,stroke:#c62828,color:#c62828
-    style OIL fill:#ffcdd2,stroke:#c62828,color:#c62828
-    style REFIN fill:#fff3e0,stroke:#f57c00,color:#f57c00
-    style CHEM fill:#fff3e0,stroke:#f57c00,color:#f57c00
-    style SHIP fill:#fff3e0,stroke:#f57c00,color:#f57c00
-    style AVIATION fill:#ffcdd2,stroke:#c62828,color:#c62828
-    style TOURISM fill:#ffcdd2,stroke:#c62828,color:#c62828
-    style GOLD fill:#c8e6c9,stroke:#388e3c,color:#388e3c
+    classDef eventNode fill:#c62828,stroke:#b71c1c,color:#fff,stroke-width:2px
+    classDef supplyNode fill:#e65100,stroke:#bf360c,color:#fff,stroke-width:2px
+    classDef transNode fill:#1565c0,stroke:#0d47a1,color:#fff,stroke-width:2px
+    classDef demandNode fill:#6a1b9a,stroke:#4a148c,color:#fff,stroke-width:2px
+    classDef safeNode fill:#2e7d32,stroke:#1b5e20,color:#fff,stroke-width:2px
+
+    class IRAN eventNode
+    class OIL supplyNode
+    class REFIN,CHEM,SHIP transNode
+    class AVIATION,TOURISM demandNode
+    class GOLD safeNode
 ```
 
 ---
 
-## 项目理念
+## 🎯 Project Philosophy
 
-在全球化市场中，重大地缘政治事件、政策变化、突发灾难往往在数小时至数天内沿产业链快速传导，引发相关行业股价的连锁反应。传统量化模型依赖历史数据，难以捕捉这些「黑天鹅」事件的非典型影响。
+> In the globalized market, major geo-political events, policy changes, and unexpected disasters often transmit rapidly through industry chains within hours to days, triggering chain reactions in related stock prices. Traditional quantitative models relying on historical data struggle to capture these "black swan" events' atypical impacts.
 
-本系统利用大语言模型的逻辑推理能力，从事件原文出发，**自动构建产业链传导路径**，并结合知识图谱约束、回测验证、实时市场数据，生成可执行的投信号。
+This system leverages LLM's logical reasoning capability to **automatically construct industry chain transmission paths** from raw events, combined with knowledge graph constraints, backtest verification, and real-time market data to generate actionable trading signals.
 
----
-
-## 核心能力
-
-| 能力 | 说明 |
-|------|------|
-| **事件理解** | LLM 自动识别事件类型（地缘政治/政策/灾难/经济数据等）、核心实体、市场情绪 |
-| **产业链传导** | 推理事件在产业链中的多级传导路径（成本传导 / 需求传导 / 替代效应） |
-| **交易信号** | 生成做多/做空信号及置信度，支持 A 股、美股、ETF |
-| **回测验证** | 基于历史相似事件动态调整信号置信度 |
-| **动态学习** | 从每次分析中自动发现新产业链关系，构建反馈闭环 |
-| **流式展示** | 实时展示 LLM 推理过程（SSE），用户可见分析步骤 |
+**Key Innovations:**
+- 🎯 **LLM-Driven Reasoning** — Go beyond historical patterns to reason about novel events
+- 🔗 **Graph-Constrained Transmission** — Deterministic relationships + flexible generalization
+- 📊 **Confidence Calibration** — Backtest-driven signal reliability
+- 🔄 **Self-Learning Loop** — Continuous knowledge graph enrichment
 
 ---
 
-## 核心技术亮点
+## ⚡ Core Capabilities
 
-### 1. 分层递进式 LLM Pipeline
+| Capability | Description |
+|:------------|:------------|
+| **🤖 Event Understanding** | LLM auto-identifies event type (geo-political/policy/disaster/economic), core entities, market sentiment |
+| **🔗 Industry Chain Transmission** | Multi-level transmission reasoning (cost transmission / demand transmission / substitution effect) |
+| **📊 Trading Signals** | Long/short signals with confidence levels, supporting A-shares, US stocks, ETFs |
+| **⚙️ Backtest Verification** | Dynamic confidence adjustment based on historical similar events |
+| **🔄 Dynamic Learning** | Auto-discover new industry chain relationships, build feedback loop |
+| **⚡ Real-time Streaming** | SSE streaming display of LLM reasoning process |
+
+---
+
+## 🚀 Technical Highlights
+
+### 1. Layered LLM Pipeline
 
 ```
-Step 1 (事件理解) → Step 2 (传导分析) → Step 3 (信号生成)
+STEP 1 (Event Understanding) ──► STEP 2 (Transmission Analysis) ──► STEP 3 (Signal Generation)
 ```
 
-每一步的输出作为下一步的输入，上下文逐步丰富。所有 LLM 调用要求结构化 JSON 输出，Pydantic 解析确保类型安全。
+Each step's output feeds into the next, with context progressively enriching. All LLM calls require structured JSON output with Pydantic validation for type safety.
 
-### 2. 知识图谱作为确定性骨架
+### 2. Knowledge Graph as Deterministic Skeleton
 
 ```python
-# 产业链知识图谱（networkx + JSON）
-# 节点：原油、天然气、化工、航空...
-# 边：原油→化工（成本传导，70%，7天）
-# 边：原油→航运（成本传导，80%，1天）
+# Industry Knowledge Graph (networkx + JSON)
+# Nodes: Crude Oil, Natural Gas, Petrochem, Aviation...
+# Edges: Crude Oil → Petrochem (cost transmission, 70%, 7 days)
+# Edges: Crude Oil → Marine (cost transmission, 80%, 1 day)
 
-# 传导分析时，注入格式化图谱约束
-# "优先遵循图谱约束，补充跨行业联系（如风险偏好传导）"
+# During transmission analysis, inject formatted graph constraints
+# "Prioritize graph constraints, supplement cross-industry links (e.g., risk appetite transmission)"
 ```
 
-知识图谱提供确定性产业链关系，LLM 在其基础上推理未覆盖的跨行业联系，平衡泛化能力与准确性。
+Knowledge graph provides deterministic industry chain relationships; LLM reasons beyond coverage for cross-industry generalization while maintaining accuracy.
 
-### 3. 动态学习反馈闭环
+### 3. Dynamic Learning Feedback
 
 ```mermaid
+%%{init: {'theme': 'base', 'themeVariables': { 'primaryColor': '#00695c', 'primaryTextColor': '#fff', 'primaryBorderColor': '#004d40', 'lineColor': '#26a69a'}}}%%
 graph LR
-    A[分析结果] --> B[动态学习]
-    B --> C{新关系?}
-    C -->|是| D[evidence_count++]
-    D --> E{置信度>阈值?}
-    E -->|是| F[合并到图谱]
-    F --> G[更丰富的图谱]
+    A[📊 Analysis Result] --> B[🔄 Dynamic Learning]
+    B --> C{{"🤔 New Relationship?"}}
+    C -->|YES| D[📈 evidence_count++]
+    D --> E{({"📉 Confidence > Threshold?"})}
+    E -->|YES| F[✅ Merge to Graph]
+    F --> G[📊 Enriched Knowledge Graph]
     G --> A
-    C -->|否| H[跳过]
+    C -->|NO| H[⏭️ Skip]
+    E -->|NO| H
 
-    classDef learning fill:#e3f2fd,stroke:#1565c0,color:#1565c0
-    classDef yes fill:#c8e6c9,stroke:#2e7d32,color:#2e7d32
-    classDef no fill:#ffcdd2,stroke:#c62828,color:#c62828
+    classDef processNode fill:#1565c0,stroke:#0d47a1,color:#fff,stroke-width:2px
+    classDef decisionNode fill:#6a1b9a,stroke:#4a148c,color:#fff,stroke-width:2px
+    classDef yesNode fill:#2e7d32,stroke:#1b5e20,color:#fff,stroke-width:2px
+    classDef noNode fill:#62757f,stroke:#455a64,color:#fff,stroke-width:2px
 
-    class B,D learning
-    class F,G yes
-    class H no
+    class B processNode
+    class C,E decisionNode
+    class F,G yesNode
+    class A,H noNode
 ```
 
 从分析结果中自动学习新产业链关系（evidence_count 增量提升置信度），发现的事件模式用于类型匹配增强。
 
-### 4. 回测驱动的置信度校准
+### 4. Backtest-Driven Confidence Calibration
 
 ```
-当前事件 → 历史相似事件匹配 → 置信度调整
-           (相似度加权：标题25%+类型20%+实体重叠30%+情绪25%)
+Current Event ──► Historical Similarity Match ──► Confidence Adjustment
+                  (Similarity Weighted: Title 25% + Type 20% + Entity Overlap 30% + Sentiment 25%)
 
-高相似度(>0.8) → +10% 置信度
-低相似度(<0.4) → -10% 置信度
+High Similarity (>0.8) ──► +10% Confidence
+Low Similarity (<0.4)  ──► -10% Confidence
 ```
 
-不是执行回测交易，而是基于历史事件模式动态调整信号置信度，提升信号可靠性。
+Not executing backtest trades, but dynamically adjusting signal confidence based on historical event patterns to improve signal reliability.
 
-### 5. 事件类型驱动的 RAG 上下文
+### 5. Event Type Driven RAG Context
 
 ```python
 EVENT_TYPE_CONTEXT_MAP = {
-    "地缘政治": {
-        "news_priority": ["地缘", "冲突", "制裁", "外交"],
-        "market_data": ["能源", "军工", "黄金", "外汇"],
+    "geo-political": {
+        "news_priority": ["geo", "conflict", "sanction", "diplomacy"],
+        "market_data": ["energy", "military", "gold", "forex"],
         "include_hot_sectors": True
     },
-    "政策": {
-        "news_priority": ["央行", "财政", "监管", "政策"],
-        "market_data": ["银行", "证券", "房地产", "保险"],
+    "policy": {
+        "news_priority": ["central bank", "fiscal", "regulation", "policy"],
+        "market_data": ["bank", "securities", "real estate", "insurance"],
         ...
     },
     ...
 }
 ```
 
-RAG 服务根据事件类型选择性注入相关上下文（新闻优先级 + 市场数据类型），而非检索全部数据，降低噪声。
+RAG service selectively injects relevant context (news priority + market data types) based on event type, not retrieving all data to reduce noise.
 
-### 6. 纯 SVG 手绘传导图谱
+### 6. Pure SVG Hand-Drawn Transmission Graph
 
-前端使用纯 SVG 手绘传导网络图（非第三方图库），实现了：
-- 分层布局算法（按传导深度分层，同层垂直居中）
-- 贝塞尔曲线边（三阶贝塞尔曲线连接节点）
-- 边宽度编码（传导率越高边越粗）
-- Hover 交互（高亮相关边，显示 Tooltip）
-
----
-
-## 功能演示
-
-**输入事件：**
-```
-美国与伊朗爆发军事冲突，伊朗封锁霍尔木兹海峡
-```
-
-**系统输出：**
-
-### Step 1: 事件理解
-- **事件类型**: 地缘政治
-- **核心实体**: 美国、伊朗、霍尔木兹海峡
-- **市场情绪**: -0.85（极度利空）
-- **直接受影响**: 原油（供给减少，+8）、航运（成本上升，-5）
-
-### Step 2: 传导分析
-```
-原油 → 石油加工（成本传导，70%，3天）
-原油 → 化工（成本传导，60%，7天）
-原油 → 航运（成本传导，80%，1天）
-航运 → 航空（成本传导，70%，5天）
-```
-
-### Step 3: 交易信号
-| 行业 | 信号 | 置信度 | 相关标的 |
-|------|------|--------|----------|
-| 石油开采 | 做多 | 85% | 中国石油、中海油、XOM |
-| 航运 | 做空 | 75% | 中远海控、达飞海运 |
-| 航空 | 做空 | 70% | 中国国航、美国航空 |
+Frontend implements pure SVG hand-drawn transmission network (no third-party libraries), featuring:
+- **Layered Layout Algorithm** (stratified by transmission depth, same layer vertically centered)
+- **Bezier Curve Edges** (cubic Bezier curves connecting nodes)
+- **Edge Width Encoding** (higher transmission rate = thicker edge)
+- **Interactive Hover** (highlight related edges, display Tooltip)
 
 ---
 
-## 技术栈
+## 💡 Demo: US-Iran Military Conflict Analysis
 
-| 层级 | 技术 |
-|------|------|
-| 后端 | FastAPI · Python 3.11+ · Pydantic · networkx · uvicorn |
-| LLM | SiliconFlow（推荐）· OpenAI · Claude · Ollama |
-| 前端 | Next.js 14 · React 18 · TypeScript · Tailwind CSS |
-| 图谱 | networkx · pyvis（交互图）· 纯 SVG（手绘图）|
-| 数据 | AkShare · Tushare（免费数据源）|
-| 容器 | Docker · Docker Compose v2 · Nginx |
+**Input:**
+```
+US-IRAN military conflict, Iran blockades Strait of Hormuz
+```
+
+**System Output:**
+
+### STEP 1: Event Understanding
+- **Event Type:** Geo-political
+- **Core Entities:** USA, Iran, Strait of Hormuz
+- **Market Sentiment:** -0.85 (extremely bearish)
+- **Direct Impact:** Crude Oil (supply reduction, +8), Marine (cost increase, -5)
+
+### STEP 2: Transmission Analysis
+```
+CRUDE OIL → REFINING (cost transmission, 70%, 3 days)
+CRUDE OIL → PETROCHEM (cost transmission, 60%, 7 days)
+CRUDE OIL → MARINE (cost transmission, 80%, 1 day)
+MARINE → AVIATION (cost transmission, 70%, 5 days)
+```
+
+### STEP 3: Trading Signals
+| Industry | Signal | Confidence | Related Assets |
+|:---------|:-------|:-----------|:---------------|
+| Oil Exploration | LONG | 85% | CNOOC, XOM, CVX |
+| Marine Shipping | SHORT | 75% | Cosco, CMA CGM |
+| Aviation | SHORT | 70% | Air China, American Airlines |
 
 ---
 
-## 目录结构
+## 🛠️ Tech Stack
+
+| Layer | Technology |
+|:------|:-----------|
+| **Backend** | FastAPI · Python 3.11+ · Pydantic · networkx · uvicorn |
+| **LLM** | SiliconFlow (Recommended) · OpenAI · Claude · Ollama |
+| **Frontend** | Next.js 14 · React 18 · TypeScript · Tailwind CSS |
+| **Graph** | networkx · pyvis (Interactive) · Pure SVG (Hand-drawn) |
+| **Data** | AkShare · Tushare (Free Data Sources) |
+| **Infra** | Docker · Docker Compose v2 · Nginx |
+
+---
+
+## 📂 Project Structure
 
 ```
 event-trading-system/
-├── deploy.sh              # VPS 一键部署脚本
-├── docker-compose.yml     # 容器编排（含 Nginx 反向代理）
-├── nginx.conf             # Nginx 配置（HTTP + HTTPS 模板）
-├── .env.example           # 环境变量模板
+├── deploy.sh              # VPS one-click deployment
+├── docker-compose.yml     # Container orchestration (with Nginx)
+├── nginx.conf             # Nginx config (HTTP + HTTPS template)
+├── .env.example           # Environment variables template
 │
 ├── backend/
 │   ├── app/
-│   │   ├── main.py           # FastAPI 入口
-│   │   ├── config.py         # 配置管理
+│   │   ├── main.py           # FastAPI entry point
+│   │   ├── config.py         # Configuration management
 │   │   ├── schemas/
-│   │   │   └── models.py     # Pydantic 数据模型
+│   │   │   └── models.py     # Pydantic data models
 │   │   └── services/
-│   │       ├── llm_client.py       # 多 LLM 封装 + 降级机制
-│   │       ├── prompts.py          # Prompt 模板
-│   │       ├── analysis.py         # 事件分析服务（核心编排）
-│   │       ├── rag_service.py      # RAG 实时上下文
-│   │       ├── network_graph.py    # 传导图谱生成
-│   │       ├── semantic_matcher.py # 语义匹配器
-│   │       ├── causal_reasoning/   # 因果推理模块
-│   │       │   ├── industry_graph.py      # 产业链知识图谱
-│   │       │   ├── dynamic_graph_learner.py # 动态学习
-│   │       │   └── llm_reasoner.py         # LLM 增强评分
+│   │       ├── llm_client.py       # Multi-LLM wrapper + fallback
+│   │       ├── prompts.py          # Prompt templates
+│   │       ├── analysis.py         # Event analysis (core orchestration)
+│   │       ├── rag_service.py      # RAG real-time context
+│   │       ├── network_graph.py    # Transmission graph generation
+│   │       ├── semantic_matcher.py # Semantic matcher
+│   │       ├── causal_reasoning/   # Causal reasoning module
+│   │       │   ├── industry_graph.py      # Industry knowledge graph
+│   │       │   ├── dynamic_graph_learner.py # Dynamic learning
+│   │       │   └── llm_reasoner.py         # LLM enhanced scoring
 │   │       ├── signal_output/
-│   │       │   └── llm_explainer.py        # 市场评论生成
-│   │       ├── impact_quant/         # 回测系统
-│   │       │   ├── event_backtest.py      # 事件回测引擎
-│   │       │   └── historical_signals.py  # 历史信号库
+│   │       │   └── llm_explainer.py        # Market commentary generation
+│   │       ├── impact_quant/         # Backtest system
+│   │       │   ├── event_backtest.py      # Event backtest engine
+│   │       │   └── historical_signals.py  # Historical signal library
 │   │       ├── event_extraction/
-│   │       │   └── llm_extractor.py        # LLM 事件提取
-│   │       └── data_providers/       # 数据提供者
+│   │       │   └── llm_extractor.py        # LLM event extraction
+│   │       └── data_providers/       # Data providers
 │   │           ├── base.py
 │   │           ├── akshare_provider.py
 │   │           └── tushare_provider.py
@@ -354,15 +378,15 @@ event-trading-system/
 │
 └── frontend/
     ├── src/
-    │   ├── app/page.tsx              # 主页面（5 Tab 架构）
+    │   ├── app/page.tsx              # Main page (5-tab layout)
     │   ├── components/
-    │   │   ├─ TransmissionGraph.tsx  # SVG 传导图谱
-    │   │   ├── TransmissionChain.tsx   # 传导链列表
-    │   │   ├── SentimentMeter.tsx     # 情绪仪表盘
-    │   │   ├── DegradationBanner.tsx # 降级提示
-    │   │   └── Sidebar.tsx            # 输入面板
+    │   │   ├─ TransmissionGraph.tsx  # SVG transmission graph
+    │   │   ├── TransmissionChain.tsx   # Transmission chain list
+    │   │   ├── SentimentMeter.tsx     # Sentiment gauge
+    │   │   ├── DegradationBanner.tsx # Fallback banner
+    │   │   └── Sidebar.tsx            # Input panel
     │   ├── hooks/
-    │   │   └── useAnalysis.ts         # SSE 流式分析 Hook
+    │   │   └── useAnalysis.ts         # SSE streaming analysis hook
     │   └── types/
     │       └── index.ts
     └── Dockerfile
@@ -370,97 +394,97 @@ event-trading-system/
 
 ---
 
-## API 接口
+## 🔌 API Endpoints
 
 ```bash
-# 普通分析（非流式）
+# Normal analysis (non-streaming)
 POST /api/v1/analyze
 {
-  "title": "美国与伊朗爆发军事冲突",
-  "content": "伊朗宣布封锁霍尔木兹海峡..."
+  "title": "US-IRAN Military Conflict",
+  "content": "Iran announces blockade of Strait of Hormuz..."
 }
 
-# 流式分析（SSE，逐步返回）
+# Streaming analysis (SSE, step-by-step response)
 POST /api/v1/analyze/stream
 
-# 知识图谱统计
+# Knowledge graph statistics
 GET /api/v1/knowledge-graph/stats
 
-# 态学习关系
+# Dynamic learning relationships
 GET /api/v1/knowledge-graph/relationships?min_confidence=0.5
 
-# 历史回测统计
+# Historical backtest statistics
 GET /api/v1/history/events
 
-# 健康检查
+# Health check
 GET /health
 ```
 
 ---
 
-## 部署说明
+## 🚀 Deployment
 
-### Docker 部署（本地 / VPS 通用）
+### Docker Deployment (Local / VPS)
 
 ```bash
 git clone https://github.com/mkih76/event-driven-trading-system.git
 cd event-driven-trading-system
 
-# 配置 API Key
+# Configure API Key
 cp .env.example .env
-# 编辑 .env 填入 SILICONFLOW_API_KEY（推荐：https://cloud.siliconflow.cn）
+# Edit .env to add SILICONFLOW_API_KEY (Recommended: https://cloud.siliconflow.cn)
 
-# 启动
+# Start
 docker compose up -d
 
-# 访问
+# Access
 open http://localhost
 ```
 
-### 手动部署
+### Manual Deployment
 
-**后端：**
+**Backend:**
 ```bash
 cd backend
 python -m venv venv && source venv/bin/activate  # Windows: venv\Scripts\activate
 pip install -r requirements.txt
-cp ../.env.example .env && vi .env  # 填入 API Key
+cp ../.env.example .env && vi .env  # Add API Key
 uvicorn app.main:app --reload --port 8080
 ```
 
-**前端：**
+**Frontend:**
 ```bash
 cd frontend
 npm install
 npm run dev
-# 访问 http://localhost:3000
+# Access http://localhost:3000
 ```
 
 ---
 
-## VPS 部署后管理
+## 🖥️ VPS Post-Deployment Management
 
-> **注意**: 需要 VPS 有 2G+ 内存（向量模型加载需要 300-500MB）
+> **Note:** VPS requires 2G+ RAM (vector model loading needs 300-500MB)
 
 ```bash
-# 进入目录
+# Enter directory
 cd /opt/event-trading-system
 
-# 查看日志
+# View logs
 docker compose logs -f
 
-# 重启服务
+# Restart services
 docker compose restart
 
-# 更新代码
+# Update code
 git pull && docker compose up -d --build
 
-# 停止服务
+# Stop services
 docker compose down
 ```
 
 ---
 
-## License
+## 📜 License
 
 MIT
