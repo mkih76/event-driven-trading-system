@@ -277,7 +277,6 @@ class EventAnalysisService:
             logger.info(f"[动态学习] 关系数: {dynamic_learner.get_statistics()['total_relationships_learned']}, 模式数: {dynamic_learner.get_statistics()['total_patterns_learned']}")
 
             # 同时学习事件历史
-            from .impact_quant import get_backtest_engine
             backtest_engine = get_backtest_engine()
             backtest_engine.learn_from_analysis(
                 event_title=title,
@@ -286,7 +285,7 @@ class EventAnalysisService:
                 sentiment=event_analysis.sentiment,
                 direct_impacts=direct_impacts_data,
                 transmission_chain=transmission_chain_data,
-                signals=[{"industry": sig.industry, "signal": sig.signal_type.value, "confidence": sig.confidence} for sig in signals]
+                signals=[{"industry": sig.industry, "signal": sig.signal.value if hasattr(sig, 'signal') else sig.signal_type.value, "confidence": sig.confidence} for sig in signals]
             )
         except Exception as e:
             logger.warning(f"[动态学习] 学习失败: {e}")
@@ -549,7 +548,6 @@ class EventAnalysisService:
             logger.info(f"[动态学习] 关系数: {dynamic_learner.get_statistics()['total_relationships_learned']}, 模式数: {dynamic_learner.get_statistics()['total_patterns_learned']}")
 
             # 同时学习事件历史
-            from .impact_quant import get_backtest_engine
             backtest_engine = get_backtest_engine()
             backtest_engine.learn_from_analysis(
                 event_title=title,
@@ -558,7 +556,7 @@ class EventAnalysisService:
                 sentiment=event_analysis.sentiment,
                 direct_impacts=direct_impacts_data,
                 transmission_chain=transmission_chain_data,
-                signals=[{"industry": sig.industry, "signal": sig.signal_type.value, "confidence": sig.confidence} for sig in signals]
+                signals=[{"industry": sig.industry, "signal": sig.signal.value if hasattr(sig, 'signal') else sig.signal_type.value, "confidence": sig.confidence} for sig in signals]
             )
         except Exception as e:
             logger.warning(f"[动态学习] 学习失败: {e}")
