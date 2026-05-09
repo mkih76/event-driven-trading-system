@@ -378,6 +378,7 @@ def get_llm() -> BaseLLMClient:
 
 # ========== 枚举值自动修复 ==========
 ENUM_MAPPING = {
+    # relation_type 映射
     "风险偏好传导": "风险偏好",
     "需求传导": "需求增加",
     "供给传导": "供给增加",
@@ -387,14 +388,46 @@ ENUM_MAPPING = {
     "避险资金": "避险需求",
     "避险": "避险需求",
     "金融属性": "风险偏好",
+    "避险情绪": "避险需求",
+    "情绪传导": "风险偏好",
+    "恐慌情绪": "风险偏好",
+    "风险偏好上升": "风险偏好",
+    "风险偏好下降": "风险偏好",
+    "需求上升": "需求增加",
+    "需求下降": "需求减少",
+    "供给上升": "供给增加",
+    "供给下降": "供给减少",
+    # event_type 映射
+    "地缘政治/政策": "地缘政治",
+    "政策/地缘政治": "地缘政治",
+    "经济数据/政策": "经济数据",
+    "地缘政治/经济数据": "地缘政治",
+    "其他/地缘政治": "其他",
+    # impact_direction 映射
+    "无": "中性",
+    "未知": "中性",
+    "不确定": "中性",
+    # impact_magnitude 映射
 }
 
 def fix_enum_values(data):
     """递归修复枚举值"""
     if isinstance(data, dict):
         for key, value in data.items():
-            if key == "relation_type" and isinstance(value, str):
-                data[key] = ENUM_MAPPING.get(value, value)
+            if isinstance(value, str):
+                # 修复 event_type 字段
+                if key == "event_type":
+                    data[key] = ENUM_MAPPING.get(value, value)
+                # 修复 relation_type 字段
+                elif key == "relation_type":
+                    data[key] = ENUM_MAPPING.get(value, value)
+                # 修复 impact_direction 字段
+                elif key == "impact_direction":
+                    data[key] = ENUM_MAPPING.get(value, value)
+                # 修复 impact_magnitude 字段
+                elif key == "impact_magnitude":
+                    if value not in ["高", "中", "低"]:
+                        data[key] = "中"  # 默认值为中
             elif isinstance(value, (dict, list)):
                 fix_enum_values(value)
     elif isinstance(data, list):
