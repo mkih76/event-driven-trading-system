@@ -371,7 +371,7 @@ class EventAnalysisService:
         ])
 
         signals_str = "\n".join([
-            f"- {sig.industry}: {sig.signal_type.value} (置信度{sig.confidence}%)"
+            f"- {sig.industry}: {sig.signal.value if hasattr(sig, 'signal') else sig.signal_type.value} (置信度{sig.confidence}%)"
             for sig in transmission.investment_signals
         ])
 
