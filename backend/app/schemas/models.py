@@ -112,6 +112,7 @@ class StockSignal(BaseModel):
     entry_rationale: str = Field(..., description="入场理由")
     risk_factors: List[str] = Field(default_factory=list)
     related_stocks: List[str] = Field(default_factory=list)
+    backtest_reference: Optional[Dict[str, Any]] = Field(default=None, description="历史回测参考")
 
 
 class FullAnalysisResult(BaseModel):
