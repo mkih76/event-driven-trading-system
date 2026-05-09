@@ -212,12 +212,13 @@ class EventAnalysisService:
                         sentiment=event_analysis.sentiment,
                         signal_confidence=signal.confidence
                     )
-                    signal.confidence = eval_result.get("adjusted_confidence", signal.confidence)
-                    signal.backtest_reference = eval_result  # 存储回测参考
+                    if eval_result and isinstance(eval_result, dict):
+                        signal.confidence = eval_result.get("adjusted_confidence", signal.confidence)
+                        signal.backtest_reference = eval_result  # 存储回测参考
                 backtest_eval = {
-                    "has_reference": len([s for s in signals if hasattr(s, 'backtest_reference') and s.backtest_reference.get("has_historical_reference")]) > 0,
+                    "has_reference": len([s for s in signals if hasattr(s, 'backtest_reference') and s.backtest_reference and s.backtest_reference.get("has_historical_reference")]) > 0,
                     "avg_confidence_adjustment": sum(
-                        s.backtest_reference.get("confidence_change", 0)
+                        (s.backtest_reference.get("confidence_change", 0) if s.backtest_reference else 0)
                         for s in signals if hasattr(s, 'backtest_reference')
                     ) / min(len(signals), 3) if signals else 0
                 }
@@ -491,8 +492,9 @@ class EventAnalysisService:
                         sentiment=event_analysis.sentiment,
                         signal_confidence=signal.confidence
                     )
-                    signal.confidence = eval_result.get("adjusted_confidence", signal.confidence)
-                    signal.backtest_reference = eval_result
+                    if eval_result and isinstance(eval_result, dict):
+                        signal.confidence = eval_result.get("adjusted_confidence", signal.confidence)
+                        signal.backtest_reference = eval_result
                 logger.info(f"[Step 3.5 完成] 回测置信度调整已应用")
         except Exception as e:
             logger.warning(f"[回测警告] 历史回测评估失败: {e}")
