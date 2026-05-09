@@ -16,6 +16,29 @@ export function Header() {
     return () => clearInterval(timer);
   }, []);
 
+  // 定期健康检查
+  useEffect(() => {
+    const checkHealth = async () => {
+      try {
+        const res = await fetch('/health', { cache: 'no-store' });
+        if (res.ok) {
+          setLlmStatus("connected");
+        } else {
+          setLlmStatus("degraded");
+        }
+      } catch {
+        setLlmStatus("degraded");
+      }
+    };
+
+    // 首次检查
+    checkHealth();
+
+    // 每30秒检查一次
+    const interval = setInterval(checkHealth, 30000);
+    return () => clearInterval(interval);
+  }, []);
+
   useEffect(() => {
     // 根据结果判断LLM状态
     if (result) {
