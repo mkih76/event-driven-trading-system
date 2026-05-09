@@ -1,14 +1,14 @@
 """
 FastAPI 应用入口
 """
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Header
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 import asyncio
 import json
 
 from .config import settings
-from .schemas.models import AnalyzeRequest, AnalyzeResponse, FullAnalysisResult
+from .schemas.models import AnalyzeRequest, AnalyzeResponse, FullAnalysisResult, MultiEventAnalyzeRequest, MultiEventAnalyzeResponse
 from .services.analysis import get_analysis_service, AnalysisDegradation, verify_api_key
 from fastapi import Depends
 import os
@@ -282,6 +282,178 @@ async def get_network_graph():
 
     generator = get_network_graph_generator()
     return generator.generate_json(transmission_obj)
+
+
+@app.post("/admin/reload-graph")
+async def reload_knowledge_graph(x_admin_key: str = Header(None, alias="X-Admin-Key")):
+    """
+    管理端点：重载知识图谱配置
+
+    通过修改 YAML 或 JSON 配置文件后，调用此端点可以热重载图谱数据。
+    需要在请求头中提供 X-Admin-Key 进行鉴权。
+
+    Headers:
+        X-Admin-Key: 管理密钥（在 .env 中配置 ADMIN_KEY）
+
+    Returns:
+        重载结果统计信息
+    """
+    # 简单的密钥验证
+    if settings.ADMIN_KEY and x_admin_key != settings.ADMIN_KEY:
+        raise HTTPException(status_code=401, detail="无效的管理密钥")
+
+    from .services.causal_reasoning import get_industry_graph
+
+    kg = get_industry_graph()
+    success = kg.reload_graph()
+
+    return {
+        "success": success,
+        "statistics": kg.get_statistics() if success else None,
+        "message": "图谱重载成功" if success else "图谱重载失败"
+    }
+
+
+@app.get("/api/v1/vector-store/stats")
+async def get_vector_store_stats():
+    """
+    获取向量库统计信息
+
+    Returns:
+        ChromaDB 存储统计
+    """
+    from .services.semantic_matcher import get_semantic_matcher
+
+    matcher = get_semantic_matcher()
+    return await matcher.get_collection_stats()
+
+
+@app.post("/api/v1/vector-store/import-history")
+async def import_historical_events_to_vector_store(
+    force_reload: bool = False,
+    x_admin_key: str = Header(None, alias="X-Admin-Key")
+):
+    """
+    将历史事件批量导入向量库
+
+    从 event_history.json 读取历史事件，计算向量后存入 ChromaDB。
+
+    Headers:
+        X-Admin-Key: 管理密钥
+
+    Query:
+        force_reload: 是否强制重新导入（默认 false，已有数据时跳过）
+    """
+    # 简单的密钥验证
+    if settings.ADMIN_KEY and x_admin_key != settings.ADMIN_KEY:
+        raise HTTPException(status_code=401, detail="无效的管理密钥")
+
+    from .services.semantic_matcher import get_semantic_matcher
+
+    matcher = get_semantic_matcher()
+    result = await matcher.import_historical_events(force_reload=force_reload)
+
+    return result
+
+
+@app.get("/api/v1/vector-store/search")
+async def search_similar_events(
+    q: str,
+    event_type: str = None,
+    top_k: int = 5
+):
+    """
+    搜索相似历史事件
+
+    Args:
+        q: 搜索查询（事件标题或描述）
+        event_type: 事件类型过滤（可选）
+        top_k: 返回数量（默认 5）
+    """
+    from .services.semantic_matcher import get_semantic_matcher
+
+    matcher = get_semantic_matcher()
+    events = await matcher.search_historical_events(
+        query=q,
+        event_type=event_type,
+        top_k=top_k
+    )
+
+    return {"results": events, "query": q, "count": len(events)}
+
+
+@app.post("/api/v1/vector-store/clear")
+async def clear_vector_store(
+    x_admin_key: str = Header(None, alias="X-Admin-Key")
+):
+    """
+    清空向量库
+
+    Headers:
+        X-Admin-Key: 管理密钥
+    """
+    if settings.ADMIN_KEY and x_admin_key != settings.ADMIN_KEY:
+        raise HTTPException(status_code=401, detail="无效的管理密钥")
+
+    from .services.semantic_matcher import get_semantic_matcher
+
+    matcher = get_semantic_matcher()
+    success = await matcher.clear_all_events()
+
+    return {"success": success, "message": "向量库已清空" if success else "清空失败"}
+
+
+@app.post("/api/v1/analyze/multi-event", response_model=MultiEventAnalyzeResponse)
+async def analyze_multi_events(
+    request: MultiEventAnalyzeRequest,
+    _auth: str = Depends(verify_api_key)
+):
+    """
+    多事件组合分析
+
+    支持分析多个事件的组合效应：
+    - combined: 综合分析所有事件的协同效应
+    - comparative: 对比分析事件的冲突与协同
+    - chain: 链式分析事件的时序传导
+
+    请求示例:
+    ```json
+    {
+        "events": [
+            {"title": "OPEC宣布减产", "content": "..."},
+            {"title": "美联储加息", "content": "..."}
+        ],
+        "strategy": "combined"
+    }
+    ```
+    """
+    from .services.multi_event_analyzer import get_multi_event_analyzer
+
+    try:
+        analyzer = get_multi_event_analyzer()
+
+        result = await analyzer.analyze(
+            events=[e.model_dump() for e in request.events],
+            strategy=request.strategy,
+            use_cache=request.use_cache
+        )
+
+        return MultiEventAnalyzeResponse(
+            success=True,
+            event_count=len(request.events),
+            strategy=request.strategy,
+            combined_analysis=result.get("combined_analysis"),
+            comparative_analysis=result.get("comparative_analysis"),
+            individual_results=result.get("individual_results", [])
+        )
+
+    except Exception as e:
+        return MultiEventAnalyzeResponse(
+            success=False,
+            event_count=len(request.events),
+            strategy=request.strategy,
+            error=str(e)
+        )
 
 
 if __name__ == "__main__":

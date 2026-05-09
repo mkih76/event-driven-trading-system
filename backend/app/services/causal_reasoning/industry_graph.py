@@ -1,6 +1,7 @@
 """
 产业链知识图谱
 使用 networkx 构建确定性产业链关系，作为 LLM 推理的约束骨架
+支持 YAML + JSON 配置，热加载能力
 """
 import json
 import os
@@ -19,10 +20,29 @@ except ImportError:
 
 logger = logging.getLogger(__name__)
 
-# 图谱数据路径（可配置）
-GRAPH_DATA_PATH = os.getenv("KNOWLEDGE_GRAPH_JSON_PATH", os.path.join(os.path.dirname(__file__), "graph_data.json"))
+# 尝试导入 YAML
+try:
+    import yaml
+    YAML_AVAILABLE = True
+except ImportError:
+    YAML_AVAILABLE = False
+    yaml = None
+    logger.warning("PyYAML 未安装，将使用 JSON 格式")
+
+# 导入配置
+from ..config import settings
+
+# 图谱数据路径（从配置或环境变量读取）
+def _get_graph_config_path() -> str:
+    """获取 YAML 配置文件路径"""
+    return os.getenv("GRAPH_CONFIG_PATH", settings.GRAPH_CONFIG_PATH)
+
+def _get_graph_data_path() -> str:
+    """获取 JSON 配置文件路径（兼容）"""
+    return os.getenv("GRAPH_DATA_PATH", settings.GRAPH_DATA_PATH)
+
 # 自动重载间隔（秒），0 表示不自动重载
-AUTO_RELOAD_INTERVAL = int(os.getenv("KNOWLEDGE_GRAPH_RELOAD_INTERVAL", "0"))
+AUTO_RELOAD_INTERVAL = int(os.getenv("KNOWLEDGE_GRAPH_RELOAD_INTERVAL", str(settings.KNOWLEDGE_GRAPH_RELOAD_INTERVAL)))
 
 
 @dataclass
@@ -91,14 +111,44 @@ class IndustryKnowledgeGraph:
         return False
 
     def _load_data(self) -> bool:
-        """加载图谱数据（自动检测重载）"""
+        """加载图谱数据（自动检测重载，优先 YAML）"""
         if not self._should_reload():
             return True
 
-        try:
-            with open(self.graph_data_path, 'r', encoding='utf-8') as f:
-                data = json.load(f)
+        yaml_path = _get_graph_config_path()
+        json_path = _get_graph_data_path()
 
+        # 优先尝试 YAML
+        data = None
+        source_file = None
+
+        if YAML_AVAILABLE and os.path.exists(yaml_path):
+            try:
+                with open(yaml_path, 'r', encoding='utf-8') as f:
+                    yaml_data = yaml.safe_load(f)
+                # 转换为内部格式
+                data = self._convert_yaml_to_internal(yaml_data)
+                source_file = yaml_path
+                logger.info(f"从 YAML 加载图谱配置: {yaml_path}")
+            except Exception as e:
+                logger.warning(f"YAML 加载失败，尝试 JSON: {e}")
+
+        # 回退到 JSON
+        if data is None and os.path.exists(json_path):
+            try:
+                with open(json_path, 'r', encoding='utf-8') as f:
+                    data = json.load(f)
+                source_file = json_path
+                logger.info(f"从 JSON 加载图谱配置: {json_path}")
+            except Exception as e:
+                logger.error(f"JSON 加载失败: {e}")
+                return False
+
+        if data is None:
+            logger.error("无法加载图谱数据：YAML 和 JSON 文件均不可用")
+            return False
+
+        try:
             # 清空现有数据
             self._nodes.clear()
             self._edges.clear()
@@ -106,10 +156,11 @@ class IndustryKnowledgeGraph:
             self._graph = None
 
             # 加载节点
-            for node_data in data.get("industries", []):
+            industries = data.get("industries", data.get("nodes", []))
+            for node_data in industries:
                 node = GraphNode(
                     id=node_data["id"],
-                    name=node_data["name"],
+                    name=node_data.get("name", node_data.get("label", "")),
                     aliases=node_data.get("aliases", []),
                     category=node_data.get("category", ""),
                     is_tradeable=node_data.get("is_tradeable", False),
@@ -125,30 +176,71 @@ class IndustryKnowledgeGraph:
                     self._name_to_id[alias] = node.id
 
             # 加载边
-            for edge_data in data.get("relationships", []):
+            relationships = data.get("relationships", data.get("edges", []))
+            for edge_data in relationships:
+                # 支持 from/to 或 source/target
+                from_node = edge_data.get("from", edge_data.get("source", ""))
+                to_node = edge_data.get("to", edge_data.get("target", ""))
+
                 edge = GraphEdge(
-                    from_node=edge_data["from"],
-                    to_node=edge_data["to"],
-                    relation_type=edge_data["relation_type"],
-                    transmission_rate=edge_data.get("transmission_rate", 0.5),
-                    time_lag_days=edge_data.get("time_lag_days", 7),
-                    confidence=edge_data.get("confidence", 0.8),
-                    description=edge_data.get("description", "")
+                    from_node=from_node,
+                    to_node=to_node,
+                    relation_type=edge_data.get("relation_type", edge_data.get("relation", "UNKNOWN")),
+                    transmission_rate=edge_data.get("transmission_rate", edge_data.get("properties", {}).get("transmission_rate", 0.5)),
+                    time_lag_days=edge_data.get("time_lag_days", edge_data.get("properties", {}).get("time_lag_days", 7)),
+                    confidence=edge_data.get("confidence", edge_data.get("properties", {}).get("confidence", 0.8)),
+                    description=edge_data.get("description", edge_data.get("properties", {}).get("description", ""))
                 )
                 self._edges.append(edge)
 
             self._initialized = True
             self._last_load_time = time.time()
-            if os.path.exists(self.graph_data_path):
-                self._last_mtime = os.path.getmtime(self.graph_data_path)
-            logger.info(f"图谱数据加载完成: {len(self._nodes)} 节点, {len(self._edges)} 边")
+            self._last_mtime = os.path.getmtime(source_file) if source_file and os.path.exists(source_file) else 0
+            logger.info(f"图谱数据加载完成: {len(self._nodes)} 节点, {len(self._edges)} 边 (来源: {source_file})")
             # 重新构建 networkx 图
             self.build_graph()
             return True
 
         except Exception as e:
-            logger.error(f"加载图谱数据失败: {e}")
+            logger.error(f"解析图谱数据失败: {e}")
             return False
+
+    def _convert_yaml_to_internal(self, yaml_data: dict) -> dict:
+        """
+        将 YAML 格式转换为内部 JSON 格式
+
+        YAML 格式: nodes[], edges[]
+        内部格式: industries[], relationships[]
+        """
+        result = {"industries": [], "relationships": []}
+
+        # 转换节点
+        for node in yaml_data.get("nodes", []):
+            result["industries"].append({
+                "id": node["id"],
+                "name": node.get("label", node["id"]),
+                "aliases": node.get("aliases", []),
+                "category": node.get("category", ""),
+                "is_tradeable": node.get("is_tradeable", False),
+                "related_etf": node.get("related_etf", []),
+                "a_share": node.get("a_share", []),
+                "us_stock": node.get("us_stock", [])
+            })
+
+        # 转换边
+        for edge in yaml_data.get("edges", []):
+            props = edge.get("properties", {})
+            result["relationships"].append({
+                "from": edge["source"],
+                "to": edge["target"],
+                "relation_type": edge["relation"],
+                "transmission_rate": props.get("transmission_rate", 0.5),
+                "time_lag_days": props.get("time_lag_days", 7),
+                "confidence": props.get("confidence", 0.8),
+                "description": edge.get("description", props.get("description", ""))
+            })
+
+        return result
 
     def reload_from_json(self, json_data: dict) -> bool:
         """
@@ -213,6 +305,21 @@ class IndustryKnowledgeGraph:
         except Exception as e:
             logger.error(f"动态重载图谱失败: {e}")
             return False
+
+    def reload_graph(self) -> bool:
+        """
+        强制重载图谱数据（用于 API 触发）
+
+        重置内部状态，强制从配置文件重新加载
+
+        Returns:
+            是否成功
+        """
+        logger.info("触发图谱热重载...")
+        # 重置最后修改时间，强制重新加载
+        self._last_mtime = 0
+        self._initialized = False
+        return self._load_data()
 
     def build_graph(self) -> Optional[Any]:
         """构建 networkx 有向图"""

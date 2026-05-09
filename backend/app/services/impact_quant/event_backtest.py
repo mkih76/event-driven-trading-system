@@ -15,6 +15,15 @@ logger = logging.getLogger(__name__)
 # 历史事件数据路径
 HISTORY_DATA_PATH = Path(__file__).parent / "event_history.json"
 
+# 从配置导入阈值
+from app.services.config import settings
+
+# 回测相关阈值（从配置读取，保留默认值作为回退）
+DUPLICATE_SIMILARITY_THRESHOLD = getattr(settings, 'EVENT_MATCH_SIMILARITY_THRESHOLD', 0.85)
+HIGH_SIMILARITY_THRESHOLD = getattr(settings, 'EVENT_MATCH_SIMILARITY_THRESHOLD', 0.8)
+MEDIUM_SIMILARITY_THRESHOLD = getattr(settings, 'EVENT_MATCH_SIMILARITY_THRESHOLD', 0.6)
+LOW_SIMILARITY_THRESHOLD = getattr(settings, 'EVENT_MATCH_SIMILARITY_THRESHOLD', 0.4)
+
 
 @dataclass
 class BacktestResult:
@@ -166,7 +175,7 @@ class EventBacktestEngine:
         )
 
         # 如果相似度太高，跳过（避免重复）
-        if existing_matches and existing_matches[0].similarity_score > 0.85:
+        if existing_matches and existing_matches[0].similarity_score > DUPLICATE_SIMILARITY_THRESHOLD:
             logger.debug(f"跳过重复事件: {event_title}")
             return
 
@@ -397,7 +406,7 @@ class EventBacktestEngine:
         matched_factors = []
         unmatched_factors = []
 
-        if details["title_similarity"] > 0.6:
+        if details["title_similarity"] > MEDIUM_SIMILARITY_THRESHOLD:
             matched_factors.append("标题相似")
         else:
             unmatched_factors.append("标题差异大")
@@ -407,30 +416,30 @@ class EventBacktestEngine:
         else:
             unmatched_factors.append("类型不同")
 
-        if details["entity_overlap"] > 0.4:
+        if details["entity_overlap"] > LOW_SIMILARITY_THRESHOLD:
             matched_factors.append("实体重叠")
         else:
             unmatched_factors.append("实体差异大")
 
-        if details["sentiment_similarity"] > 0.6:
+        if details["sentiment_similarity"] > MEDIUM_SIMILARITY_THRESHOLD:
             matched_factors.append("情绪方向一致")
         else:
             unmatched_factors.append("情绪方向相反")
 
         # 置信度调整
         confidence_adjustment = 0.0
-        if match.similarity_score > 0.8:
+        if match.similarity_score > HIGH_SIMILARITY_THRESHOLD:
             confidence_adjustment = 10.0  # 高相似度增加置信度
-        elif match.similarity_score > 0.6:
+        elif match.similarity_score > MEDIUM_SIMILARITY_THRESHOLD:
             confidence_adjustment = 5.0
-        elif match.similarity_score > 0.4:
+        elif match.similarity_score > LOW_SIMILARITY_THRESHOLD:
             confidence_adjustment = 0.0  # 中等相似度不调整
         else:
             confidence_adjustment = -10.0  # 低相似度降低置信度
 
         # 判断是否可靠
         is_reliable = (
-            match.similarity_score > 0.4 and
+            match.similarity_score > LOW_SIMILARITY_THRESHOLD and
             details["entity_overlap"] > 0.25 and
             details["type_match"]
         )

@@ -54,6 +54,9 @@ class Settings(BaseSettings):
     API_AUTH_ENABLED: bool = False  # 设为 True 启用认证
     API_KEY: Optional[str] = None  # 设置 API Key
 
+    # 管理端点密钥
+    ADMIN_KEY: Optional[str] = None  # 用于管理端点（如图谱重载）
+
     class Config:
         env_file = ".env"
         env_file_encoding = "utf-8"

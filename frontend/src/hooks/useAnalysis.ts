@@ -3,12 +3,23 @@ import type { FullAnalysis, StreamEvent, AnalyzeResponse, ExampleEvent } from '@
 
 const API_BASE = typeof window !== 'undefined' ? '' : (process.env.NEXT_PUBLIC_API_URL || 'http://backend:8080');
 
+interface SimilarEvent {
+  event_id: string;
+  title: string;
+  event_type: string;
+  sentiment: number;
+  date: string;
+  similarity: number;
+  direct_impacts: any[];
+}
+
 export function useAnalysis() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<FullAnalysis | null>(null);
   const [currentStep, setCurrentStep] = useState<number>(0);
   const [stepMessage, setStepMessage] = useState<string>('');
+  const [similarEvents, setSimilarEvents] = useState<SimilarEvent[]>([]);
 
   const analyze = useCallback(async (title: string, content: string = ''): Promise<AnalyzeResponse> => {
     setLoading(true);
@@ -32,6 +43,18 @@ export function useAnalysis() {
       }
 
       setResult(data.data!);
+
+      // 搜索相似历史事件
+      try {
+        const searchRes = await fetch(`${API_BASE}/api/v1/vector-store/search?q=${encodeURIComponent(title)}&top_k=3`);
+        const searchData = await searchRes.json();
+        if (searchData.results && searchData.results.length > 0) {
+          setSimilarEvents(searchData.results);
+        }
+      } catch (e) {
+        console.warn('获取相似事件失败:', e);
+      }
+
       return data;
     } catch (err) {
       const message = err instanceof Error ? err.message : '未知错误';
@@ -183,6 +206,7 @@ export function useAnalysis() {
     setError(null);
     setCurrentStep(0);
     setStepMessage('');
+    setSimilarEvents([]);
   }, []);
 
   return {
@@ -194,6 +218,7 @@ export function useAnalysis() {
     analyze,
     analyzeStream,
     clearResult,
+    similarEvents,
   };
 }
 

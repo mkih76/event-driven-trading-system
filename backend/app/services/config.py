@@ -54,6 +54,19 @@ class Settings(BaseSettings):
     API_AUTH_ENABLED: bool = False  # 设为 True 启用认证
     API_KEY: Optional[str] = None  # 设置 API Key
 
+    # 管理端点密钥
+    ADMIN_KEY: Optional[str] = None  # 用于管理端点（如图谱重载）
+
+    # 知识图谱配置
+    GRAPH_CONFIG_PATH: str = "app/services/causal_reasoning/graph_data.yml"  # YAML配置文件路径
+    GRAPH_DATA_PATH: str = "app/services/causal_reasoning/graph_data.json"  # JSON配置文件路径（兼容）
+    KNOWLEDGE_GRAPH_RELOAD_INTERVAL: int = 0  # 自动重载间隔(秒)，0表示不自动重载
+
+    # 相似度阈值配置
+    SEMANTIC_SIMILARITY_THRESHOLD: float = 0.5  # 语义相似度阈值（用于检索相似事件）
+    EVENT_MATCH_SIMILARITY_THRESHOLD: float = 0.6  # 事件匹配相似度阈值（用于回测匹配）
+    MIN_CONFIDENCE_THRESHOLD: float = 0.5  # 最小置信度阈值（用于筛选信号）
+
     class Config:
         env_file = ".env"
         env_file_encoding = "utf-8"

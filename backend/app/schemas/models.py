@@ -43,6 +43,7 @@ class TransmissionRelationType(str, Enum):
     """传导关系类型"""
     COST_UP = "成本传导"          # 原材料/成本上涨
     COST_DOWN = "成本下降"        # 原材料/成本下降
+    COST_INCREASE = "成本增加"    # 成本增加（成本传导的变体）
     DEMAND_UP = "需求增加"
     DEMAND_DOWN = "需求减少"
     SUPPLY_UP = "供给增加"
@@ -147,5 +148,51 @@ class AnalyzeResponse(BaseModel):
     """分析响应"""
     success: bool
     data: Optional[FullAnalysisResult] = None
+    error: Optional[str] = None
+
+
+# 多事件分析模型
+class EventInput(BaseModel):
+    """单个事件输入"""
+    title: str = Field(..., description="事件标题")
+    content: str = Field(default="", description="事件内容（可选）")
+    date: Optional[str] = Field(default=None, description="事件日期（可选）")
+
+
+class MultiEventAnalyzeRequest(BaseModel):
+    """多事件组合分析请求"""
+    events: List[EventInput] = Field(..., description="事件列表", min_length=2, max_length=10)
+    strategy: str = Field(default="combined", description="分析策略: combined(综合分析) / comparative(对比分析) / chain(链式分析)")
+    use_cache: bool = Field(default=True, description="是否使用缓存")
+
+
+class EventCombinationAnalysis(BaseModel):
+    """事件组合分析结果"""
+    combined_summary: str = Field(..., description="组合事件综合摘要")
+    event_interactions: List[Dict[str, Any]] = Field(default_factory=list, description="事件间交互分析")
+    net_effect: Dict[str, Any] = Field(default_factory=dict, description="净效应分析")
+    affected_industries: List[str] = Field(default_factory=list, description="受影响行业汇总")
+    combined_signals: List[Dict[str, Any]] = Field(default_factory=list, description="组合信号")
+    risk_opportunities: List[Dict[str, Any]] = Field(default_factory=list, description="风险与机会识别")
+
+
+class ComparativeAnalysis(BaseModel):
+    """对比分析结果"""
+    event_a_summary: str = Field(..., description="事件A摘要")
+    event_b_summary: str = Field(..., description="事件B摘要")
+    conflicting_industries: List[Dict[str, Any]] = Field(default_factory=list, description="冲突行业")
+    synergistic_industries: List[Dict[str, Any]] = Field(default_factory=list, description="协同行业")
+    neutral_industries: List[str] = Field(default_factory=list, description="中性行业")
+    recommendation: str = Field(..., description="投资建议")
+
+
+class MultiEventAnalyzeResponse(BaseModel):
+    """多事件组合分析响应"""
+    success: bool
+    event_count: int = Field(..., description="分析的事件数量")
+    strategy: str = Field(..., description="使用的分析策略")
+    combined_analysis: Optional[EventCombinationAnalysis] = None
+    comparative_analysis: Optional[ComparativeAnalysis] = None
+    individual_results: List[FullAnalysisResult] = Field(default_factory=list, description="各事件单独分析结果")
     error: Optional[str] = None
     cached: bool = False

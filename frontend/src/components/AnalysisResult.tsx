@@ -17,8 +17,19 @@ import type { FullAnalysis, StockSignal } from "@/types";
 import { TransmissionChain } from "./TransmissionChain";
 import { SentimentMeter } from "./SentimentMeter";
 
+interface SimilarEvent {
+  event_id: string;
+  title: string;
+  event_type: string;
+  sentiment: number;
+  date: string;
+  similarity: number;
+  direct_impacts: any[];
+}
+
 interface AnalysisResultProps {
   result: FullAnalysis;
+  similarEvents?: SimilarEvent[];
 }
 
 export function AnalysisResult({ result }: AnalysisResultProps) {
@@ -123,6 +134,84 @@ export function AnalysisResult({ result }: AnalysisResultProps) {
           <p className="text-xs text-slate-400 mt-1">LLM 推理完成</p>
         </div>
       </div>
+
+      {/* 相似历史事件 */}
+      {similarEvents && similarEvents.length > 0 && (
+        <div className="bg-white rounded-xl shadow">
+          <button
+            onClick={() => toggleSection("similar")}
+            className="w-full p-6 flex items-center justify-between text-left"
+          >
+            <div className="flex items-center gap-2">
+              <History className="w-5 h-5 text-primary" />
+              <h3 className="text-lg font-semibold text-slate-800">
+                相似历史事件 ({similarEvents.length})
+              </h3>
+            </div>
+            {expandedSections.has("similar") ? (
+              <ChevronUp className="w-5 h-5 text-slate-400" />
+            ) : (
+              <ChevronDown className="w-5 h-5 text-slate-400" />
+            )}
+          </button>
+          {expandedSections.has("similar") && (
+            <div className="px-6 pb-6 space-y-3">
+              {similarEvents.map((event, i) => (
+                <div
+                  key={i}
+                  className={`p-4 rounded-lg border ${
+                    event.sentiment > 0
+                      ? "border-positive/30 bg-positive/5"
+                      : event.sentiment < 0
+                      ? "border-negative/30 bg-negative/5"
+                      : "border-slate-200 bg-slate-50"
+                  }`}
+                >
+                  <div className="flex items-start justify-between mb-2">
+                    <div>
+                      <p className="font-medium text-slate-800">{event.title}</p>
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className="text-xs px-2 py-0.5 bg-slate-100 rounded">
+                          {event.event_type}
+                        </span>
+                        <span className="text-xs text-slate-500">{event.date}</span>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className={`text-sm font-bold ${
+                        event.similarity >= 0.7 ? "text-green-600" :
+                        event.similarity >= 0.5 ? "text-yellow-600" :
+                        "text-slate-500"
+                      }`}>
+                        {(event.similarity * 100).toFixed(0)}%
+                      </div>
+                      <p className="text-xs text-slate-400">相似度</p>
+                    </div>
+                  </div>
+                  {event.direct_impacts && event.direct_impacts.length > 0 && (
+                    <div className="mt-2 flex flex-wrap gap-1">
+                      {event.direct_impacts.slice(0, 4).map((impact, j) => (
+                        <span
+                          key={j}
+                          className={`text-xs px-2 py-0.5 rounded ${
+                            impact.impact_direction === "利好" || impact.direction === "利好"
+                              ? "bg-positive/20 text-positive"
+                              : impact.impact_direction === "利空" || impact.direction === "利空"
+                              ? "bg-negative/20 text-negative"
+                              : "bg-slate-100 text-slate-600"
+                          }`}
+                        >
+                          {impact.industry}: {impact.impact_direction || impact.direction}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* 情绪仪表盘 */}
       <div className="bg-white rounded-xl shadow p-6">
